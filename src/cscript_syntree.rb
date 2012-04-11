@@ -4,17 +4,30 @@
 # Shou Ya
 #
 
+class Symbol
+    alias :old_eee :===
+    def ===(another)
+        if another.is_a? CSTreeNode
+            return another === self
+        else
+            return self.send :old_eee, another
+        end
+    end
+end
 class CSTreeNode
     attr_accessor :type, :next
     def print
     end
     def append(obj)
-        b = a = self
-        while a.next
-            b = a
-            a = a.next
-        end
-        b.next = obj
+        a = self
+        a = a.next while !a.next.nil?
+        a.next = obj
+         
+        self
+    end
+    def ===(name)
+#        p "#{self}, #{@type} === #{name}, #{@type == name}"
+        return name == @type 
     end
 end
 
@@ -23,7 +36,17 @@ class CSValue < CSTreeNode
 
     def initialize(val, type = nil)
         @val = val
-        @type = type
+        @type = CSValue.get_type(val, type)
+    end
+    def self.get_type(val, given_type)
+        case val
+        when Fixnum
+            return :INTEGER
+        when String
+            return given_type || :STRING
+        else
+            return :UNKNOWN
+        end
     end
     def print(lvl = 0)
         Kernel.print(". " * lvl)
@@ -56,6 +79,13 @@ class CSCtrl < CSTreeNode
             op.print(lvl + 1)
         end
         @next.print(lvl) if @next
+    end
+    def << (new_op)
+        @operators << new_op
+        self
+    end
+    def length
+        @operators.length
     end
 end
 

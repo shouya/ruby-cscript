@@ -1,8 +1,8 @@
 
-require_relative 'cscript_lex'
-require_relative 'cscript_yacc.tab'
+require_relative 'cscript_parser'
 require_relative 'cscript_syntree'
 
+=begin
 class Lexer
     include CScriptScanner
 end
@@ -15,9 +15,10 @@ CScriptParser.class_eval do
     end
 end
 
-
+=end
 
 parser = CScriptParser.new
+parser.scan_string($stdin.read)
 tree = parser.do_parse
 
 tree.print

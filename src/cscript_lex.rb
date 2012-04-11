@@ -40,7 +40,8 @@ module CScriptScanner
 # Comments
         [/\*\//,          """ @state = nil """,           :COMM ],
         [/\/\*/,          """ @state = :COMM; nil """,      nil ],
-        [/(.+?)(?=\*\/)/, """ nil """,                    :COMM ],
+        [/\n/,            """ nil """,                    :COMM ],
+        [/./,             """ nil """,                    :COMM ],
 
 # Comparisons
         [/\</,            """ [:RELATION, '<'] """,         nil ],
@@ -87,32 +88,33 @@ module CScriptScanner
         [/\%/,            """ [text, nil] """,              nil ],
         [/\;/,            """ [text, nil] """,              nil ],
         [/\,/,            """ [text, nil] """,              nil ],
-        [/\{/,            """ [text, nil] """,              nil ],
-        [/\}/,            """ [text, nil] """,              nil ],
-        [/\!/,            """ [text, nil] """,              nil ],
-        [/\[/,            """ [text, nil] """,              nil ],
-        [/\]/,            """ [text, nil] """,              nil ],
         [/\(/,            """ [text, nil] """,              nil ],
         [/\)/,            """ [text, nil] """,              nil ],
+        [/\[/,            """ [text, nil] """,              nil ],
+        [/\]/,            """ [text, nil] """,              nil ],
+        [/\!/,            """ [text, nil] """,              nil ],
         [/\?/,            """ [text, nil] """,              nil ],
-        [/\:/,            """ [text, nil] """,              nil ],
         [/\&/,            """ [text, nil] """,              nil ],
         [/\|/,            """ [text, nil] """,              nil ],
         [/\^/,            """ [text, nil] """,              nil ],
         [/\~/,            """ [text, nil] """,              nil ],
         [/\=/,            """ [text, nil] """,              nil ],
         [/\./,            """ [text, nil] """,              nil ],
+        [/\{/,            """ [text, nil] """,              nil ],
+        [/\}/,            """ [text, nil] """,              nil ],
+        [/\:/,            """ [text, nil] """,              nil ],
+
 
 # Name tokens
         [/[a-zA-Z_][0-9a-zA-Z_]*/,""" [:NAME, text] """,    nil ],
 
 # Something other omitted
         [/\r\n|\r|\n/,            """ inc_lineno """,               nil ],
-        [/\s/,            """ nil """,                      nil ],
+        [/\s/,                    """ nil """,                      nil ],
     ]
     @rules.freeze
 
-    class LexError < Exception
+    class CScriptLexError < Exception
     end
 
     def scan_file(file_name)
@@ -137,14 +139,20 @@ module CScriptScanner
         @colno = @scanner.pos
         nil
     end
+    def column
+        return @scanner.pos - @colno
+    end
 
     def match_and_deal
         return [false, false] if @scanner.eos?
         state_accorded = @rules.find_all {|x| x[2] == @state}
         found = state_accorded.find(nil) { |x| @scanner.match? x[0] }
+#        p "#{@scanner.rest} [#{state}]"
 
         if !found
-            raise LexError, "Unmatched string in #{@lineno}:#{@colno}.", caller
+            raise CScriptLexError,
+                "Unmatched string in #{@lineno}:#{column}.",
+                caller
         end
 
         text = @scanner.scan(found[0])

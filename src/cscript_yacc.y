@@ -15,6 +15,8 @@ prechigh
     left        '+' '-'
     right       '='
     noassoc     '%'
+    noassoc     ELSE
+    noassoc     LOWER_THAN_ELSE
 preclow
 
 start main_rule
@@ -27,6 +29,9 @@ rule
     literal: STRING { return mkVal(val[0]) }
         | INTEGER   { return mkVal(val[0]) }
     ;
+
+    name: NAME          { return mkVal(val[0], :NAME) }
+    ;
         
 
     expr: literal       { return val[0] }
@@ -36,6 +41,7 @@ rule
         | expr '/' expr { return mkCtrl(:DIVIDE, val[0], val[2]) }
         | NAME          { return mkVal(val[0], :NAME) }
         | '%' expr      { return mkCtrl(:PRINT, val[1]) }
+        | '(' expr ')'  { return val[1] }
         | assignment    { return val[0] }
     ;
 
@@ -44,8 +50,32 @@ rule
     }
     ;
         
+    stmt_lst: stmt      { return val[0] }
+        | stmt_lst stmt { return val[0].append val[1] }
+    ;
 
     stmt: expr ';' { return mkCtrl(:STMT, val[0]) }
+        | x_if     { return val[0] }
+    ;
+
+    x_if: if_part     =LOWER_THAN_ELSE  { return val[0] }
+        | if_part else_part { return val[0] << val[1] }
+    ;
+
+    if_part: IF '(' expr ')' '{' stmt_lst '}' {
+            return mkCtrl(:IF_PART, val[2], val[5])
+        }
+        |    IF '(' expr ')' stmt {
+            return mkCtrl(:IF_PART, val[2], val[4])
+        }
+    ;
+
+    else_part: ELSE '{' stmt_lst '}' {
+            return mkCtrl(:ELSE_PART, val[2])
+        }
+        |      ELSE stmt             {
+            return mkCtrl(:ELSE_PART, val[1])
+        }
     ;
 
 end
