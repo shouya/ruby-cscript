@@ -13,6 +13,7 @@ require_relative 'cscript_intexec'
 
 
 class CScriptExecutor
+    include CScriptSyntaxTree
     include CScriptCommon
     include CScriptInternalEvaluator
     include CScriptInternalExecutor
@@ -34,6 +35,8 @@ class CScriptExecutor
                 nil
             when :IF_PART
                 exec_if(tree, CScriptRuntime.new(runtime, :stmt))
+            when :WHILE
+                exec_while(tree, CScriptRuntime.new(runtime, :stmt))
             end
 
             if tree.next == nil

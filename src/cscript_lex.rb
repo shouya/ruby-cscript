@@ -6,6 +6,10 @@
 module CScriptScanner
     require 'strscan'
 
+    attr_accessor :state
+    attr_accessor :lineno
+    attr_accessor :file
+
     def self.rules
         return @rules
     end
@@ -117,31 +121,37 @@ module CScriptScanner
     class CScriptLexError < Exception
     end
 
+
+    def scan_stdin
+        @file = '<stdin>'
+        scan_string($stdin.read)
+    end
     def scan_file(file_name)
+        @file = file_name
         open file_name do |f|
             scan_string(f.read)
         end
     end
     def scan_string(string)
+        @file ||= '<string>'
         @scanner = StringScanner.new(string)
         @rules = CScriptScanner.rules # UGLY
 
         @state = nil
         @lineno = 1
+        @colno = 0
     end
-
-
-    attr_accessor :state
-    attr_accessor :lineno
 
     def inc_lineno
         @lineno += 1
         @colno = @scanner.pos
         nil
     end
+
     def column
         return @scanner.pos - @colno
     end
+    alias :columnno :column
 
     def match_and_deal
         return [false, false] if @scanner.eos?
@@ -174,6 +184,13 @@ module CScriptScanner
         end
         return ret
     end
+
+    def place()
+        return [@file, @lineno, columnno]
+    end
+    alias :where :place
+    alias :where? :place
+    alias :w? :place
 
 end
     

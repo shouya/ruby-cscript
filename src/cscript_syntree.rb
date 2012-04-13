@@ -4,96 +4,109 @@
 # Shou Ya
 #
 
+# Monkey patch
 class Symbol
     alias :old_eee :===
     def ===(another)
-        if another.is_a? CSTreeNode
+        if another.is_a? CScriptSyntaxTree::CSTreeNode
             return another === self
         else
             return self.send :old_eee, another
         end
     end
 end
-class CSTreeNode
-    attr_accessor :type, :next
-    def print
-    end
-    def append(obj)
-        a = self
-        a = a.next while !a.next.nil?
-        a.next = obj
-         
-        self
-    end
-    def ===(name)
-#        p "#{self}, #{@type} === #{name}, #{@type == name}"
-        return name == @type 
-    end
-end
 
-class CSValue < CSTreeNode
-    attr_accessor :val
+module CScriptSyntaxTree
 
-    def initialize(val, type = nil)
-        @val = val
-        @type = CSValue.get_type(val, type)
-    end
-    def self.get_type(val, given_type)
-        case val
-        when Fixnum
-            return :INTEGER
-        when String
-            return given_type || :STRING
-        else
-            return :UNKNOWN
+    class CSTreeNode
+        attr_accessor :type, :next, :place
+        def print
         end
-    end
-    def print(lvl = 0)
-        Kernel.print(". " * lvl)
-        if self.val.class == String
-            if self.type == :NAME
-                puts "Name: #{self.val}"
-            else
-                puts "String: #{self.val}"
+        def append(obj)
+            a = self
+            a = a.next while !a.next.nil?
+            a.next = obj
+             
+            self
+        end
+        def ===(name)
+    #        p "#{self}, #{@type} === #{name}, #{@type == name}"
+            return name == @type 
+        end
+        def place_str
+            if @place
+                return @place.join ':'
             end
-        else
-            puts "#{self.val.class}: #{self.val}"
+            return ''
         end
-        @next.print(lvl) if @next
     end
-end
 
-class CSCtrl < CSTreeNode
-    attr_accessor :operators
-    alias :op :operators
-    alias :op= :operators=
+    class CSValue < CSTreeNode
+        attr_accessor :val
 
-    def initialize(type, *op)
-        @type = type
-        @operators = op
-    end
-    def print(lvl = 0)
-        Kernel.print(". " * lvl)
-        puts "#{self.type}"
-        self.op.each do |op|
-            op.print(lvl + 1)
+        def initialize(val, type = nil)
+            @val = val
+            @type = CSValue.get_type(val, type)
         end
-        @next.print(lvl) if @next
+        def self.get_type(val, given_type)
+            case val
+            when Fixnum
+                return :INTEGER
+            when String
+                return given_type || :STRING
+            else
+                return :UNKNOWN
+            end
+        end
+        def print(lvl = 0)
+            ret = '. ' * lvl
+            if self.val.class == String
+                if self.type == :NAME
+                    ret << "Name: #{self.val}"
+                else
+                    ret << "String: #{self.val}"
+                end
+            else
+                ret << "#{self.val.class}: #{self.val}"
+            end
+            ret << "  (#{place_str})\n"
+            ret << @next.print(lvl) if @next
+            ret
+        end
     end
-    def << (new_op)
-        @operators << new_op
-        self
+
+    class CSCtrl < CSTreeNode
+        attr_accessor :operands
+        alias :op :operands
+        alias :op= :operands=
+
+        def initialize(type, *op)
+            @type = type
+            @operands = op
+        end
+        def print(lvl = 0)
+            ret = '. ' * lvl
+            ret << "#{self.type}  (#{place_str})\n"
+            self.op.each do |op|
+                ret << op.print(lvl + 1)
+            end
+            ret << @next.print(lvl) if @next
+            ret
+        end
+        def << (new_op)
+            @operands << new_op
+            self
+        end
+        def length
+            @operands.length
+        end
     end
-    def length
-        @operators.length
-    end
-end
 
 
-def mkCtrl(type, *op)
-    return CSCtrl.new(type, *op)
+    def mkCtrl(type, *op)
+        return CSCtrl.new(type, *op)
+    end
+    def mkVal(val, *type)
+        return CSValue.new(val, *type)
+    end
 end
-def mkVal(val)
-    return CSValue.new(val)
-end
-

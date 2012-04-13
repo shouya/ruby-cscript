@@ -15,33 +15,64 @@ module CScriptInternalEvaluator
         case tree
         when :INTEGER
             return val
+        when :NAME
+            return runtime.find(val)
+        when :STRING
+            return val
         end
+
         nil
     end
 
     def eval_unary(tree, runtime)
         val = evaluate(tree.op[0], runtime)
         case tree
+        when :UMINUS
+            return -val
+        when :UPLUS
+            return val
         when :PRINT
-            return (puts val)
+            if val == -1
+                puts runtime.call_stack.inspect
+                return 0
+            end
+            return puts val
         end
+
+        warn "WTF is this(unary) #{tree.type}"
         nil
     end
 
     def eval_binary(tree, runtime)
-        op1, op2 = tree.op[0..1]
+        op1 = evaluate(tree.op[0], runtime)
+        op2 = evaluate(tree.op[1], runtime)
 
         case tree
         when :PLUS
-            return evaluate(op1, runtime) + evaluate(op2, runtime)
+            return op1 + op2
         when :MINUS
-            return evaluate(op1, runtime) - evaluate(op2, runtime)
+            return op1 - op2
         when :MULTIPLY
-            return evaluate(op1, runtime) * evaluate(op2, runtime)
+            return op1 * op2
         when :DIVIDE
-            return evaluate(op1, runtime) / evaluate(op2, runtime)
+            return op1 / op2
         end
+        warn "WTF is this(binary) #{tree.type}"
+
         nil
+    end
+    def eval_assign(tree, runtime)
+        name = tree.op[0]
+        if name.type != :NAME
+            raise CScriptRuntimeError,
+                "Can't be not a name as left operand of an assignment operation",
+                runtime.call_stack
+        end
+
+        rhs = evaluate(tree.op[1], runtime)
+
+        runtime.set_variable(name.val, rhs)
+        return rhs
     end
 
     def evaluate(tree, runtime)
@@ -50,10 +81,13 @@ module CScriptInternalEvaluator
             return eval_value(tree, runtime)
         when :PLUS, :MINUS, :MULTIPLY, :DIVIDE
             return eval_binary(tree, runtime)
-        when :PRINT
+        when :UMINUS, :UPLUS, :PRINT
             return eval_unary(tree, runtime)
         when :EMPTY
             return eval_ignore(tree, runtime)
+        when :ASSIGN
+            return eval_assign(tree, runtime)
         end
+        warn "Unrecognized type of tree: #{tree.type}"
     end
 end

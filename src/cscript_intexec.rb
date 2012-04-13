@@ -4,17 +4,30 @@
 #
 
 module CScriptInternalExecutor
-   def exec_if(tree, runtime)
+    def exec_if(tree, runtime)
        if_rt = CScriptRuntime.new(runtime, :if)
 
        cond = evaluate(tree.op[0], if_rt)
        if_part = tree.op[1]
        else_part = tree.op[2] if tree.length == 3
 
-       if !CS_is_false?(cond)
+       if !is_false?(cond)
            execute(if_part, if_rt)
        else
            execute(else_part.op[0], if_rt) if tree.length == 3
        end
-   end
+    end
+
+    def exec_while(tree, runtime)
+        while_rt = CScriptRuntime.new(runtime, :while)
+
+        cond = tree.op[0]
+        loop_part = tree.op[1]
+
+        loop do
+            cond_res = evaluate(cond, while_rt)
+            break if is_false? cond_res
+            execute(loop_part, while_rt)
+        end
+    end
 end

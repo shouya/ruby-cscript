@@ -11,10 +11,15 @@
 class CScriptParser
 
 prechigh
+    right       UMINUS UPLUS
+
     left        '*' '/'
     left        '+' '-'
+
     right       '='
+
     noassoc     '%'
+
     noassoc     ELSE
     noassoc     LOWER_THAN_ELSE
 preclow
@@ -33,21 +38,24 @@ rule
     name: NAME          { return mkVal(val[0], :NAME) }
     ;
         
-
     expr: literal       { return val[0] }
         | expr '+' expr { return mkCtrl(:PLUS, val[0], val[2]) }
         | expr '-' expr { return mkCtrl(:MINUS, val[0], val[2]) }
         | expr '*' expr { return mkCtrl(:MULTIPLY, val[0], val[2]) }
         | expr '/' expr { return mkCtrl(:DIVIDE, val[0], val[2]) }
-        | NAME          { return mkVal(val[0], :NAME) }
+        | name          { return val[0] }
         | '%' expr      { return mkCtrl(:PRINT, val[1]) }
         | '(' expr ')'  { return val[1] }
         | assignment    { return val[0] }
+        | unary_op      { return val[0] }
     ;
 
-    assignment: expr '=' expr {
-        return mkCtrl(:ASIGN, val[0], val[2])
-    }
+    unary_op: '-' expr =UMINUS  { return mkCtrl(:UMINUS, val[1]) }
+        | '+' expr =UPLUS       { return mkCtrl(:UPLUS, val[1]) }
+
+    assignment: name '=' expr {
+            return mkCtrl(:ASSIGN, val[0], val[2])
+        }
     ;
         
     stmt_lst: stmt      { return val[0] }
@@ -56,25 +64,28 @@ rule
 
     stmt: expr ';' { return mkCtrl(:STMT, val[0]) }
         | x_if     { return val[0] }
+        | x_while  { return val[0] }
     ;
+
+    stmt_or_blk: stmt           { return val[0] }
+        | '{' stmt_lst '}'      { return val[1] }
 
     x_if: if_part     =LOWER_THAN_ELSE  { return val[0] }
-        | if_part else_part { return val[0] << val[1] }
+        | if_part else_part   { return val[0] << val[1] }
     ;
 
-    if_part: IF '(' expr ')' '{' stmt_lst '}' {
-            return mkCtrl(:IF_PART, val[2], val[5])
-        }
-        |    IF '(' expr ')' stmt {
+    if_part: IF '(' expr ')' stmt_or_blk {
             return mkCtrl(:IF_PART, val[2], val[4])
         }
     ;
 
-    else_part: ELSE '{' stmt_lst '}' {
-            return mkCtrl(:ELSE_PART, val[2])
-        }
-        |      ELSE stmt             {
+    else_part: ELSE stmt_or_blk {
             return mkCtrl(:ELSE_PART, val[1])
+        }
+    ;
+
+    x_while: WHILE '(' expr ')' stmt_or_blk {
+            return mkCtrl(:WHILE, val[2], val[4]);
         }
     ;
 
