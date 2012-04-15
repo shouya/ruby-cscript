@@ -16,4 +16,10 @@ if (c = 2 /* local */ ) {
 
 % c;     /* crash here */
 
+/*
+
+This program will print out a `7' and then crash
+
+*/
+
 

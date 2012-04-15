@@ -4,7 +4,6 @@
 #
 #
 
-require_relative 'cscript_common'
 require_relative 'cscript_parser'
 require_relative 'cscript_syntree'
 require_relative 'cscript_runtime'
@@ -14,7 +13,6 @@ require_relative 'cscript_intexec'
 
 class CScriptExecutor
     include CScriptSyntaxTree
-    include CScriptCommon
     include CScriptInternalEvaluator
     include CScriptInternalExecutor
     

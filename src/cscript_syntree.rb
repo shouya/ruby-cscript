@@ -39,6 +39,12 @@ module CScriptSyntaxTree
             end
             return ''
         end
+
+        def type_is? (*arg)
+            return true if arg.include? @type
+            return false
+        end
+
     end
 
     class CSValue < CSTreeNode

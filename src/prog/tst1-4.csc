@@ -18,7 +18,7 @@ while (b = b - 1) {
     % 1234;
     % 5678;
     /*
-    print 1234 \n 5678   twice
+    print '1234 \n 5678'   twice
     */
 }
 

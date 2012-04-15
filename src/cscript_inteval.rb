@@ -4,42 +4,43 @@
 #
 #
 
+
 module CScriptInternalEvaluator
+    require_relative 'cscript_value'
+
     def eval_ignore(tree, runtime)
         nil
     end
 
     def eval_value(tree, runtime)
-        val = tree.val
-
         case tree
-        when :INTEGER
-            return val
+        when :INTEGER, :STRING
+            return CScriptValue.new(tree.val)
         when :NAME
-            return runtime.find(val)
-        when :STRING
-            return val
+            return runtime.find(tree.val)
         end
 
-        nil
+        warn "WTF is this value #{tree.val} of #{tree.type}"
     end
 
     def eval_unary(tree, runtime)
         val = evaluate(tree.op[0], runtime)
         case tree
         when :UMINUS
-            return -val
+            val.type_assert(:INTEGER, runtime.call_stack)
+            return -val.val
         when :UPLUS
-            return val
+            val.type_assert(:INTEGER, runtime.call_stack)
+            return val.val
         when :PRINT
-            if val == -1
+            if val.type_is? :INTEGER and val.to_i == -1
                 puts runtime.call_stack.inspect
                 return 0
             end
-            return puts val
+            return puts val.val.inspect
         end
 
-        warn "WTF is this(unary) #{tree.type}"
+        warn "WTF is this unary operation #{tree.type}"
         nil
     end
 
@@ -49,29 +50,39 @@ module CScriptInternalEvaluator
 
         case tree
         when :PLUS
-            return op1 + op2
+            op1.type_assert :INTEGER, runtime.call_stack
+            op2.type_assert :INTEGER, runtime.call_stack
+            return CScriptValue.new(op1.val + op2.val)
         when :MINUS
-            return op1 - op2
+            op1.type_assert :INTEGER, runtime.call_stack
+            op2.type_assert :INTEGER, runtime.call_stack
+            return CScriptValue.new(op1.val - op2.val)
         when :MULTIPLY
-            return op1 * op2
+            op1.type_assert :INTEGER, runtime.call_stack
+            op2.type_assert :INTEGER, runtime.call_stack
+            return CScriptValue.new(op1.val * op2.val)
         when :DIVIDE
-            return op1 / op2
+            op1.type_assert :INTEGER, runtime.call_stack
+            op2.type_assert :INTEGER, runtime.call_stack
+            return CScriptValue.new(op1.val / op2.val)
         end
-        warn "WTF is this(binary) #{tree.type}"
+        warn "WTF is this binary operation #{tree.type}"
 
         nil
     end
     def eval_assign(tree, runtime)
         name = tree.op[0]
-        if name.type != :NAME
+        if !name.type_is? :NAME
             raise CScriptRuntimeError,
-                "Can't be not a name as left operand of an assignment operation",
+                "Can't be not a name as left operand" \
+                   "of an assignment operation",
                 runtime.call_stack
         end
 
         rhs = evaluate(tree.op[1], runtime)
 
         runtime.set_variable(name.val, rhs)
+
         return rhs
     end
 

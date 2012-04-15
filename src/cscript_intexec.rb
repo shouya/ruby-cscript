@@ -11,7 +11,7 @@ module CScriptInternalExecutor
        if_part = tree.op[1]
        else_part = tree.op[2] if tree.length == 3
 
-       if !is_false?(cond)
+       if cond.is_false?
            execute(if_part, if_rt)
        else
            execute(else_part.op[0], if_rt) if tree.length == 3
@@ -26,7 +26,7 @@ module CScriptInternalExecutor
 
         loop do
             cond_res = evaluate(cond, while_rt)
-            break if is_false? cond_res
+            break if cond_res.is_false?
             execute(loop_part, while_rt)
         end
     end
