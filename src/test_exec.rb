@@ -2,7 +2,7 @@
 #
 
 
-require_relative 'cscript_executor'
+require_relative 'cscript_runtime'
 require_relative 'cscript_parser'
 
 
@@ -14,8 +14,7 @@ tree = parser.do_parse
 puts tree.print
 puts "=== message above is syntax tree ==="
 
-executor = CScriptExecutor.new(tree)
-executor.execute
+CScriptRuntime.execute(tree)
 
 puts "=== these above is program output ==="
 

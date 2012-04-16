@@ -1,0 +1,109 @@
+# new evaluation mix-in module for cscript project
+#
+# Shou Ya   morning in 17 Apr, 2012
+#
+
+require_relative 'cscript_syntree'
+
+module CScriptEvaluator
+    def evaluate(tree)
+        if ! running? and ! [:if, :while].include? @type then
+            warn 'Unexpected evaluating without running itself'
+        end
+        @eval_tree = tree
+
+        @i = 0
+
+        retval = case @eval_tree
+                 when :EMPTY
+                     nil
+                 when :INTEGER, :STRING
+                     eval_literal(@eval_tree)
+                 when :PLUS, :MINUS, :MULTIPLY, :DIVIDE
+                     eval_binary_arithmetic(@eval_tree)
+                 when :PRINT
+                     eval_debug_print(@eval_tree)
+                 when :UMINUS, :UPLUS
+                     eval_unary_arithmetic(@eval_tree)
+                 when :ASSIGN
+                     eval_assignment(@eval_tree)
+                 when :NAME
+                     eval_name(@eval_tree)
+                 else
+                     warn 'Unknown expression type'
+                 end
+        retval
+    end
+
+    def eval_literal(tree)
+        return CScriptValue.new(tree.val)
+    end
+    def eval_binary_arithmetic(tree)
+        op1, op2 = tree.op[0..1].map {|x| evaluate x }
+
+        case tree
+        when :PLUS
+            op1.type_assert :INTEGER, self
+            op2.type_assert :INTEGER, self
+            return CScriptValue.new(op1.val + op2.val)
+        when :MINUS
+            op1.type_assert :INTEGER, self
+            op2.type_assert :INTEGER, self
+            return CScriptValue.new(op1.val - op2.val)
+        when :MULTIPLY
+            op1.type_assert :INTEGER, self
+            op2.type_assert :INTEGER, self
+            return CScriptValue.new(op1.val * op2.val)
+        when :DIVIDE
+            op1.type_assert :INTEGER, self
+            op2.type_assert :INTEGER, self
+            return CScriptValue.new(op1.val / op2.val)
+        end
+    end
+    def eval_unary_arithmetic(tree)
+        op = evaluate(tree.op[0])
+
+        case tree
+        when :UMINUS
+            op.type_assert(:INTEGER, self)
+            return CScriptValue.new(-op.val)
+        when :UPLUS
+            op.type_assert(:INTEGER, self)
+            return CScriptValue.new(op.val)
+        end
+    end
+    def eval_assignment(tree)
+        name = tree.op[0]
+        value = evaluate(tree.op[1])
+
+        if name.type != :NAME then
+            raise CScriptRuntimeError,
+                "The left of assignment must be a lvalue",
+                stack
+        end
+
+        store_variable(name.val, value)
+
+        return value
+    end
+    def eval_name(tree)
+        value = query_variable(tree.val)
+
+        return value
+    end
+    def eval_debug_print(tree)
+        op = evaluate(tree.op[0])
+        if op.type_is? :INTEGER and op.to_i == -1
+            puts stack.inspect
+        else
+            puts op.val.inspect
+        end
+
+        return CScriptValue.new(0)
+    end
+
+    public :evaluate
+    private :eval_literal, :eval_binary_arithmetic, :eval_unary_arithmetic,
+        :eval_assignment, :eval_name, :eval_debug_print
+
+end

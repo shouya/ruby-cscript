@@ -372,7 +372,7 @@ module_eval(<<'.,.,', 'cscript_yacc.y', 61)
 
 module_eval(<<'.,.,', 'cscript_yacc.y', 64)
   def _reduce_21(val, _values, result)
-     return mkCtrl(:STMT, val[0]) 
+     return mkCtrl(:EXPR_STMT, val[0]) 
     result
   end
 .,.,

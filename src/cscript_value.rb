@@ -11,6 +11,7 @@ class CScriptValue
     attr_accessor :value, :type
     alias :val :value
     alias :val= :value=
+    attr_accessor :first_defined, :last_assigned
 
     def initialize(value = nil, type = nil)
         if value == nil
@@ -28,6 +29,9 @@ class CScriptValue
             end
             @value = value
         end
+
+        @first_assigned = nil
+        @last_defined = nil
 
         return self
     end
@@ -59,7 +63,7 @@ class CScriptValue
         if !type_is? *arg
             raise CScriptTypeError,
                 "Not expected type",
-                stack if stack
+                stack.stack if stack
             raise CScriptTypeError,
                 "Not expected type"
         end

@@ -62,7 +62,7 @@ rule
         | stmt_lst stmt { return val[0].append val[1] }
     ;
 
-    stmt: expr ';' { return mkCtrl(:STMT, val[0]) }
+    stmt: expr ';' { return mkCtrl(:EXPR_STMT, val[0]) }
         | x_if     { return val[0] }
         | x_while  { return val[0] }
     ;
