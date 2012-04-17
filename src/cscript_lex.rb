@@ -39,7 +39,7 @@ module CScriptScanner
     @rules = [
 # Basic Elements
         [/\d+/,                   """ [:INTEGER, text.to_i] """,     nil ],
-        [/\"([^\"]|\\[nt\"])*\"/, """ [:STRING, text[1..-2]] """,    nil ],
+        [/\"([^\"]|\\[nt\"])*\"/, """ [:STRING, parse_str(text)] """,nil ],
 
 # Comments
         [/\*\//,          """ @state = nil """,           :COMM ],
@@ -146,6 +146,30 @@ module CScriptScanner
         @lineno += 1
         @colno = @scanner.pos
         nil
+    end
+
+    def parse_str(text)
+        result = ''
+        pattern = %r[(\\[nt\\\/\|]|.)] # currently handles \
+        # \n, \t, \\, \/, \| only
+        text[1..-2].scan(pattern) do |(m)|
+            if m[0] == "\\" then
+                result << eval(%["#{m}"])
+            else
+                result << m.to_s
+            end
+        end
+
+=begin
+        # Another easier way but not quite safe as this
+        # and it will unexcepted execute stuff like '#{XXXX}'
+        result = proc {
+            $SAFE = 4
+            eval text
+            }.call
+=end
+
+        return result
     end
 
     def column

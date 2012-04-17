@@ -43,17 +43,31 @@ module CScriptEvaluator
 
         case tree
         when :PLUS
-            op1.type_assert :INTEGER, self
-            op2.type_assert :INTEGER, self
-            return CScriptValue.new(op1.val + op2.val)
+            if op1.type_is? :INTEGER and op2.type_is? :INTEGER then
+                return CScriptValue.new(op1.val + op2.val)
+            elsif op1.type_is? :STRING and op2.type_is? :STRING then
+                return CScriptValue.new(op1.val + op2.val)
+            else
+                raise CScriptRuntimeError,
+                    'Cannot operate PLUS between' \
+                    "`#{op1.type}' and `#{op2.type}'.",
+                    stack
+            end
         when :MINUS
             op1.type_assert :INTEGER, self
             op2.type_assert :INTEGER, self
             return CScriptValue.new(op1.val - op2.val)
         when :MULTIPLY
-            op1.type_assert :INTEGER, self
-            op2.type_assert :INTEGER, self
-            return CScriptValue.new(op1.val * op2.val)
+            if op1.type_is? :INTEGER and op2.type_is? :INTEGER then
+                return CScriptValue.new(op1.val * op2.val)
+            elsif op1.type_is? :STRING and op2.type_is? :INTEGER then
+                return CScriptValue.new(op1.val * op2.val)
+            else
+                raise CScriptRuntimeError,
+                    'Cannot operate MULTIPLY between' \
+                    "`#{op1.type}' and `#{op2.type}",
+                    stack
+            end
         when :DIVIDE
             op1.type_assert :INTEGER, self
             op2.type_assert :INTEGER, self
@@ -95,8 +109,10 @@ module CScriptEvaluator
         op = evaluate(tree.op[0])
         if op.type_is? :INTEGER and op.to_i == -1
             puts stack.inspect
-        else
-            puts op.val.inspect
+        elsif op.type_is? :INTEGER
+            puts op.val
+        elsif op.type_is? :STRING
+            print op.val
         end
 
         return CScriptValue.new(0)
