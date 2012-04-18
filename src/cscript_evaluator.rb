@@ -4,6 +4,8 @@
 #
 
 require_relative 'cscript_syntree'
+require_relative 'cscript_function'
+require_relative 'cscript_callstack'
 
 module CScriptEvaluator
     def evaluate(tree)
@@ -15,6 +17,8 @@ module CScriptEvaluator
         @i = 0
 
         retval = case @eval_tree
+                 when CScriptValue
+                     @eval_tree
                  when :EMPTY
                      nil
                  when :INTEGER, :STRING
@@ -29,8 +33,10 @@ module CScriptEvaluator
                      eval_assignment(@eval_tree)
                  when :NAME
                      eval_name(@eval_tree)
+                 when :FUNC_CALL
+                     eval_func_call(@eval_tree)
                  else
-                     warn 'Unknown expression type'
+                     warn "Unknown expression type #{@eval_tree.type}"
                  end
         retval
     end
@@ -40,6 +46,7 @@ module CScriptEvaluator
     end
     def eval_binary_arithmetic(tree)
         op1, op2 = tree.op[0..1].map {|x| evaluate x }
+
 
         case tree
         when :PLUS
@@ -116,6 +123,27 @@ module CScriptEvaluator
         end
 
         return CScriptValue.new(0)
+    end
+    def eval_func_call(tree)
+        name = tree.op[0]
+        args = tree.op[1]
+        evaled_args = []
+
+        args.each do |op|
+            evaled_args << evaluate(op)
+        end
+
+
+        f = evaluate(name)
+        f.type_assert :FUNCTION, stack
+        
+        param_hash = f.val.make_param_hash(evaled_args)
+        
+        stack_obj = CScriptCallStack.new :function => f.val,
+                                         :parent => self,
+                                         :arguments => param_hash,
+                                         :function_name => name.val
+        return stack_obj.evaluate
     end
 
     public :evaluate

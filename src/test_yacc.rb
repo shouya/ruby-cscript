@@ -1,6 +1,5 @@
 
 require_relative 'cscript_parser'
-require_relative 'cscript_syntree'
 
 =begin
 class Lexer
@@ -18,10 +17,12 @@ end
 =end
 
 parser = CScriptParser.new
-parser.scan_string($stdin.read)
+parser.scan_stdin
 tree = parser.do_parse
 
-tree.print
+puts "======== TREE ============"
+puts tree.print
+puts "======== END ============="
 
 
 

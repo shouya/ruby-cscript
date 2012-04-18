@@ -70,6 +70,7 @@ module CScriptScanner
         [/\benum\b/,          """ [:ENUM, nil] """,             nil ],
         [/\blambda\b/,        """ [:LAMBDA, nil] """,           nil ],
         [/\bimport\b/,        """ [:IMPORT, nil] """,           nil ],
+        [/\bdef\b/,           """ [:DEF, nil] """,              nil ],
         [/\bNULL\b/,          """ [:NULL, nil] """,             nil ],
         [/\bstr\b/,           """ [:STR, nil] """,              nil ],
         [/\bint\b/,           """ [:INT, nil] """,              nil ],

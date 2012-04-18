@@ -46,6 +46,8 @@ class CScriptValue
             return :NULL
         when Symbol
             return :NAME
+        when CScriptFunction
+            return :FUNCTION
         else
             warn "WTF is this value(#{val}, #{val.class})!"
         end

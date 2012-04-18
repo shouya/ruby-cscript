@@ -10,6 +10,7 @@ require_relative 'cscript_executor'
 class SomeError < Exception; end
 
 class CScriptRunStack
+    include Enumerable
     include CScriptEvaluator
     include CScriptExecutor
 
@@ -17,6 +18,7 @@ class CScriptRunStack
     # execution info
     attr_accessor :run_ptr, :eval_tree, :current_child, :last_value
     attr_accessor :tree, :table   # content data
+    attr_accessor :call_stack
 
     def initialize(parent = nil, type = nil)
         @type = type
@@ -29,6 +31,11 @@ class CScriptRunStack
         @table = {}
     end
 
+    def each
+        @table.each do |k,v|
+            yield k, v
+        end
+    end
     def query_variable(name)
         found = upfind_variable(name)
         if ! found then
@@ -42,10 +49,14 @@ class CScriptRunStack
     def store_variable(name, value)
         found = upfind_variable(name)
         if found then
-            value.last_assigned = @eval_tree.place
+            if @eval_tree.respond_to? :place then
+                value.last_assigned = @eval_tree.place
+            end
             found.store_local_variable(name, value)
         else
-            value.last_assigned = value.first_defined = @eval_tree.place
+            if @eval_tree.respond_to? :place then
+                value.last_assigned = value.first_defined = @eval_tree.place
+            end
             
             block = upfind_variable_storable
             if block then
@@ -55,6 +66,11 @@ class CScriptRunStack
                     'Storage variable but not block scope found',
                     stack
             end
+        end
+    end
+    def append_variables(hash)
+        hash.each do |k, v|
+            store_local_variable(k, v)
         end
     end
 
@@ -81,14 +97,23 @@ class CScriptRunStack
 
     def stack
         myself = "#{@type}#{": #{@run_ptr.place_str}" if @run_ptr}"
-        if has_parent?
+        if @call_stack
+            return @call_stack.stack.unshift myself
+        elsif has_parent?
             return @parent.stack.unshift myself
         end
         return [myself]
     end
+    def root
+        p = self
+        until p.type == :root
+            p = p.parent
+        end
+        return p
+    end
 
     def variable_storable?
-        return true if [:root, :while, :if].include? @type
+        return true if [:root, :while, :if, :func_call].include? @type
         return false
     end
     def has_parent?

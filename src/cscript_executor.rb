@@ -3,6 +3,9 @@
 # Shou Ya   morning in 17 Apr, 2012
 #
 
+require_relative 'cscript_function'
+
+require 'pp'
 
 module CScriptExecutor
     def execute(tree)
@@ -35,8 +38,12 @@ module CScriptExecutor
             @last_value = exec_if
         when :WHILE
             @last_value = exec_while
+        when :FUNC_DEF
+            @last_value = exec_func_def
+        when :RETURN
+            @last_value = exec_return
         else
-            warn "Unknown statement: #{@run_ptr}"
+            warn "Unknown statement: #{@run_ptr.type} at #{@run_ptr.place_str}"
         end
 
         @run_ptr = @run_ptr.next
@@ -83,6 +90,26 @@ module CScriptExecutor
         @last_value
     end
 
+    def exec_func_def
+        func_name = @run_ptr.op[0]
+        param = @run_ptr.op[1].map { |x| x.val }
+        body = @run_ptr.op[2..-1].inject { |b,n| b.append(n) }
+
+        func_obj = CScriptValue.new(
+            CScriptFunction.new(body, param, func_name.val))
+        gen_stmt = CScriptSyntaxTree::CSCtrl.new(:ASSIGN, func_name, func_obj)
+        gen_stmt.place = func_name.place
+        root.evaluate(gen_stmt)
+    end
+    def exec_return
+        has_retval = @run_ptr.op.length == 1
+        if has_retval then
+            @call_stack.return_val = evaluate(@run_ptr.op[0])
+        else
+            @call_stack.return_val = CScriptValue.new(nil)
+        end
+        throw :return
+    end
 
     public :execute, :step
     private :exec_if, :exec_while

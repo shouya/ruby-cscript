@@ -17,9 +17,10 @@ CScriptParser.class_eval do
     include CScriptScanner
     include CScriptSyntaxTree
 
+    
     alias :old_mkCtrl :mkCtrl
     alias :old_mkVal :mkVal
-
+    
     def mkCtrl(*arg)
         obj = old_mkCtrl(*arg)
         obj.place = where?

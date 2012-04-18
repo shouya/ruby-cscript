@@ -17,7 +17,6 @@ class Symbol
 end
 
 module CScriptSyntaxTree
-
     class CSTreeNode
         attr_accessor :type, :next, :place
         def print
@@ -48,6 +47,8 @@ module CScriptSyntaxTree
     end
 
     class CSValue < CSTreeNode
+        include Comparable
+
         attr_accessor :val
 
         def initialize(val, type = nil)
@@ -68,9 +69,9 @@ module CScriptSyntaxTree
             ret = '. ' * lvl
             if self.val.class == String
                 if self.type == :NAME
-                    ret << "Name: #{self.val}"
+                    ret << "Name: #{self.val.inspect}"
                 else
-                    ret << "String: #{self.val}"
+                    ret << "String: #{self.val.inspect}"
                 end
             else
                 ret << "#{self.val.class}: #{self.val}"
@@ -79,9 +80,14 @@ module CScriptSyntaxTree
             ret << @next.print(lvl) if @next
             ret
         end
+        def <=>(other)
+            @val <=> other.val
+        end
     end
 
     class CSCtrl < CSTreeNode
+        include Enumerable
+
         attr_accessor :operands
         alias :op :operands
         alias :op= :operands=
@@ -90,11 +96,16 @@ module CScriptSyntaxTree
             @type = type
             @operands = op
         end
+        def each
+            self.op.each do |operand|
+                yield operand
+            end
+        end
         def print(lvl = 0)
             ret = '. ' * lvl
             ret << "#{self.type}  (#{place_str})\n"
             self.op.each do |op|
-                ret << op.print(lvl + 1)
+                ret << op.print(lvl + 1) if op
             end
             ret << @next.print(lvl) if @next
             ret
@@ -107,7 +118,6 @@ module CScriptSyntaxTree
             @operands.length
         end
     end
-
 
     def mkCtrl(type, *op)
         return CSCtrl.new(type, *op)
