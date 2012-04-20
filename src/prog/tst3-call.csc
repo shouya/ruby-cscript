@@ -6,7 +6,7 @@ def func(a, b) {
 
 def func_prn(a, b) {
     % func(a, b);
-    "hello\n";
+    "hello\n"; /* if not returns explicitly, it will return the last value */
 }
 
 
@@ -38,7 +38,7 @@ def deep(a) {
     if (a) {
         deep(a - 1);
     } else {
-        % b; /* crash */
+        % b; /* crash: for stack printing */
     }
 }
 

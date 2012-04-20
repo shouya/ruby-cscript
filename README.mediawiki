@@ -40,23 +40,23 @@ Same as [[cscript3]], the project still separates to many stages to complete it,
 
 However, the stage standard does not completely same as cscript3, so, for more details, see below.
 
-{{DONE|Currently I'm doing the first stage.}}
+'''DONE:'''   Currently I'm doing the first stage.
 
-{{DONE|I'll now delightedly announce that ''the first stage has been satisfactorily succeeded'' and mark the previous line done! What I'll do later is the next stage, enjoy going on. ([[User:ShouYa|Shou Ya]] 04:04, 14 April 2012 (CST))|date=morning, 17 April, 2012}}
+'''DONE:'''   I'll now delightedly announce that ''the first stage has been satisfactorily succeeded'' and mark the previous line done! What I'll do later is the next stage, enjoy going on. ([[User:ShouYa  Shou Ya]] 04:04, 14 April 2012 (CST))  date=morning, 17 April, 2012
 
-{{DONE|The third stage.}}
+'''DONE:'''   The third stage.
 
-{{DOING|The fourth :)}}
+'''DOING:'''   The fourth :)
 
 === First Stage ===
 Test whether basic program and design are flexible. Do some very basic tasks.
 
 Functions opened:
-* {{DONE|variable declaration and assignment}}
-* {{DONE|print integer statement}}
-* {{DONE|if statement for condition branching}}
-* {{DONE|while loop}}
-* {{DONE|basic arithmetic operations like '+/-/*/\/'}}
+* '''DONE:'''   variable declaration and assignment
+* '''DONE:'''   print integer statement
+* '''DONE:'''   if statement for condition branching
+* '''DONE:'''   while loop
+* '''DONE:'''   basic arithmetic operations like '+/-/*/\/'
 
 Extra Result:
 * trace all origin place where the symbol is from in the syntax tree
@@ -66,19 +66,19 @@ Extra Result:
 Purpose: add string support
 
 Functions opened:
-* {{DELAY|convert/cast between strings & integers each others|reason=it depends on function calling or stuff|date=03:42, 18 April 2012 (CST)}}
-* {{DONE|output strings}}
-* {{DONE|determine whether a string is empty and set to false}}
-* {{DONE|implement the operations '+', '*' to string}}
+* '''DELAY:'''   convert/cast between strings & integers each others  reason=it depends on function calling or stuff  date=03:42, 18 April 2012 (CST)
+* '''DONE:'''   output strings
+* '''DONE:'''   determine whether a string is empty and set to false
+* '''DONE:'''   implement the operations '+', '*' to string
 
 === Third Stage ===
 Purpose: add functions calling and defining support.
 
 Functions opened:
-* {{DOING|a non-completed internal function library}}
-* {{DONE|custom function definition|date=04:54, 19 April 2012 (CST)}}
-* {{DONE|custom function calling|date=04:54, 19 April 2012 (CST)}}
-* {{DELAY|custom function declaration|reason=it needs external file support, so it should be delayed to the next stage|date=04:54, 19 April 2012 (CST)}}
+* '''DOING:'''   a non-completed internal function library
+* '''DONE:'''   custom function definition  date=04:54, 19 April 2012 (CST)
+* '''DONE:'''   custom function calling  date=04:54, 19 April 2012 (CST)
+* '''DELAY:'''   custom function declaration  reason=it needs external file support, so it should be delayed to the next stage  date=04:54, 19 April 2012 (CST)
 
 === Fourth Stage ===
 Purpose: add multi-file program support
@@ -94,17 +94,17 @@ Don't be too impatient, I believe the things above is already able to give me a 
 
 == To Do ==
 * <s>print each symbols' position in source file</s>
-* {{TODO|jumping control in loop structure (refer to: ''rewrite runtime class'' ''#3'')}}
-* {{DONE|remember the place where the variable first defined and most recent reassigned.}}
-* {{DONE|rewrite runtime class}}
+* '''TODO:'''   jumping control in loop structure (refer to: ''rewrite runtime class'' ''#3'')
+* '''DONE:'''   remember the place where the variable first defined and most recent reassigned.
+* '''DONE:'''   rewrite runtime class
 *# it should be a singleton common class (abbr. <code>SCS</code>) for whole the program
 *# variable container should use a separated class
 *# the SCS should has a pointer that points currently executing statement, and a pointer to currently evaluating expression and thus it will enhance the controllability of program.
 *# the SCS should be able to XXXX
-* {{DONE|write a `value class`, for just store cscript variant values.}}
+* '''DONE:'''   write a `value class`, for just store cscript variant values.
 *# it should respond to `is_false` and `is_true` instead of what the <code>CscriptCommon</code> currently doing.
 *# storage known value type only, and warning for the unknown ones.
-* {{TODO|respond to `<code>local</code>` and `<code>global</code>` to define variable explicitly.}}
+* '''TODO:'''   respond to `<code>local</code>` and `<code>global</code>` to define variable explicitly.
 
 == Words At Last ==
 Enjoy Ruby.

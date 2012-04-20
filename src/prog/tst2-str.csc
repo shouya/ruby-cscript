@@ -14,11 +14,11 @@ a = "good night\n";
 % a;
 /* should output `good night'  */
 
-/* this won't interpreted */
+/* this won't be interpreted */
 a = "string #{text}\n";
 % a;
 
-if ("" + "") {
+if ("" + "") { /* empty string == false */
    % "not here\n";
 } else {
    % "but here\n";
@@ -32,14 +32,14 @@ if ("yes") {
 
 The program will output:
 
-<< THESE
+<< THESE | sed '2 s/./ /g'
 helloworld
-hello hello hello hello 
+hello.hello.hello.hello.
 good night
 string #{text}
 but here
 this is right way currently
-HESE
+THESE
 
 */
 
