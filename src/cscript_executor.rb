@@ -7,6 +7,13 @@ require_relative 'cscript_function'
 
 require 'pp' if $DEBUG
 
+class CScriptLoopControl < Exception; end
+class CScriptLoopControlRedo < CScriptLoopControl; end
+class CScriptLoopControlBreak < CScriptLoopControl
+    attr_accessor :level
+end
+class CScriptLoopControlNext < CScriptLoopControl; end
+
 module CScriptExecutor
     def execute(tree)
         @tree = tree
@@ -76,23 +83,20 @@ module CScriptExecutor
         loop_part = @run_ptr.op[1]
 
 
-        catch :break do
-            loop do # This is the while's loop
-                catch :next do
-                    cond_res = while_stack.evaluate(cond)
-                    @last_value = cond_res
+        loop do # This is the while's loop
+            cond_res = while_stack.evaluate(cond)
+            @last_value = cond_res
 
-                    throw :break if cond_res.is_false?
+            break if cond_res.is_false?
 
-                    catch :x_break do
-                        loop do
-                            catch :redo do
-                                @last_value = while_stack.execute(loop_part)
-                                throw :x_break
-                            end
-                        end
-                    end
-                end
+            begin
+                @last_value = while_stack.execute(loop_part)
+            rescue CScriptLoopControlRedo
+                retry
+            rescue CScriptLoopControlBreak
+                break
+            rescue CScriptLoopControlNext
+                # Do nothing
             end
         end
 
@@ -123,7 +127,14 @@ module CScriptExecutor
     end
 
     def exec_loop_ctrl
-        throw @run_ptr.type.downcase
+        case @run_ptr.type
+        when :REDO
+            raise CScriptLoopControlRedo
+        when :NEXT
+            raise CScriptLoopControlNext
+        when :BREAK
+            raise CScriptLoopControlBreak
+        end
     end
     public :execute, :step
     private :exec_if, :exec_while
