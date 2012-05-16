@@ -63,8 +63,13 @@ module CScriptScanner
         [/\bcase\b/,          """ [:CASE, nil] """,             nil ],
         [/\bswitch\b/,        """ [:SWITCH, nil] """,           nil ],
         [/\bdefault\b/,       """ [:DEFAULT, nil] """,          nil ],
+
         [/\bbreak\b/,         """ [:BREAK, nil] """,            nil ],
-        [/\bcontinue\b/,      """ [:CONTINUE, nil] """,         nil ],
+        [/\blast\b/,          """ [:BREAK, nil] """,            nil ],
+        [/\bcontinue\b/,      """ [:NEXT, nil] """,             nil ],
+        [/\bnext\b/,          """ [:NEXT, nil] """,             nil ],
+        [/\bredo\b/,          """ [:REDO, nil] """,             nil ],
+
         [/\bin\b/,            """ [:IN, nil] """,               nil ],
         [/\bstruct\b/,        """ [:STRUCT, nil] """,           nil ],
         [/\benum\b/,          """ [:ENUM, nil] """,             nil ],

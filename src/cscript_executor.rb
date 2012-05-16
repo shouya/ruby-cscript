@@ -5,14 +5,10 @@
 
 require_relative 'cscript_function'
 
-require 'pp'
+require 'pp' if $DEBUG
 
 module CScriptExecutor
     def execute(tree)
-        if running? then
-            warn 'Do not execute anything inside itself while running'
-            return
-        end
         @tree = tree
         @state = :running
         @current_child = nil
@@ -42,6 +38,8 @@ module CScriptExecutor
             @last_value = exec_func_def
         when :RETURN
             @last_value = exec_return
+        when :REDO, :NEXT, :BREAK
+            exec_loop_ctrl
         else
             warn "Unknown statement: #{@run_ptr.type} at #{@run_ptr.place_str}"
         end
@@ -77,14 +75,27 @@ module CScriptExecutor
         cond = @run_ptr.op[0]
         loop_part = @run_ptr.op[1]
 
-        loop do
-            cond_res = while_stack.evaluate(cond)
-            @last_value = cond_res
 
-            break if cond_res.is_false?
+        catch :break do
+            loop do # This is the while's loop
+                catch :next do
+                    cond_res = while_stack.evaluate(cond)
+                    @last_value = cond_res
 
-            @last_value = while_stack.execute(loop_part)
+                    throw :break if cond_res.is_false?
+
+                    catch :x_break do
+                        loop do
+                            catch :redo do
+                                @last_value = while_stack.execute(loop_part)
+                                throw :x_break
+                            end
+                        end
+                    end
+                end
+            end
         end
+
 
         @current_child = nil
         @last_value
@@ -111,6 +122,9 @@ module CScriptExecutor
         throw :return
     end
 
+    def exec_loop_ctrl
+        throw @run_ptr.type.downcase
+    end
     public :execute, :step
     private :exec_if, :exec_while
 

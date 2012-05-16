@@ -93,11 +93,14 @@ rule
         | stmt_lst stmt { return val[0].append val[1] }
     ;
 
-    stmt: expr ';' { return mkCtrl(:EXPR_STMT, val[0]) }
-        | x_if     { return val[0] }
-        | x_while  { return val[0] }
-        | x_return { return val[0] }
-    ;
+
+    stmt: expr ';'      { return mkCtrl(:EXPR_STMT, val[0]) }
+        | x_if          { return val[0] }
+        | x_while       { return val[0] }
+        | x_return ';'  { return val[0] }
+        | loop_ctrl ';' { return val[0] }
+        | ';'           { return mkCtrl(:EMPTY_STMT) }
+    ; 
 
     stmt_or_blk: stmt           { return val[0] }
         | '{' stmt_lst '}'      { return val[1] }
@@ -121,8 +124,13 @@ rule
         }
     ;
 
-    x_return: RETURN ';'        { return mkCtrl(:RETURN) }
-        | RETURN expr ';'       { return mkCtrl(:RETURN, val[1]) }
+    x_return: RETURN    { return mkCtrl(:RETURN) }
+        | RETURN expr   { return mkCtrl(:RETURN, val[1]) }
+    ;
+
+    loop_ctrl: REDO     { return mkCtrl(:REDO) }
+        | NEXT          { return mkCtrl(:NEXT) }
+        | BREAK         { return mkCtrl(:BREAK) }
     ;
 
 end
