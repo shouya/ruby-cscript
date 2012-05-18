@@ -7,6 +7,7 @@
 
 class CScriptTypeError < CScriptRuntimeError; end
 
+
 class CScriptValue
     attr_accessor :value, :type
     alias :val :value
@@ -46,6 +47,8 @@ class CScriptValue
             return :NULL
         when Symbol
             return :NAME
+        when TrueClass, FalseClass
+            return :BOOL
         when CScriptFunction
             return :FUNCTION
         else
@@ -82,6 +85,8 @@ class CScriptValue
             return @value
         when :INTEGER
             return @value.to_s
+        when :BOOL
+            return @value.to_s
         when :NULL
             return ''
         end
@@ -94,6 +99,8 @@ class CScriptValue
             return @value.length == 0
         when :INTEGER
             return @value == 0
+        when :BOOL
+            return @value == false
         when :NULL
             return true
         end

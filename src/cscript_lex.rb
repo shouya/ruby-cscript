@@ -48,10 +48,12 @@ module CScriptScanner
         [/./,             """ nil """,                    :COMM ],
 
 # Comparisons
-        [/\</,            """ [:RELATION, '<'] """,         nil ],
-        [/\>/,            """ [:RELATION, '>'] """,         nil ],
-        [/\=\=/,          """ [:EQUALITY, '='] """,         nil ],
-        [/\!\=/,          """ [:EQUALITY, '!'] """,         nil ],
+        [/\<\=/,           """ [:RELATION, :<=] """,            nil ],
+        [/\</,            """ [:RELATION, :<] """,              nil ],
+        [/\>\=/,           """ [:RELATION, :>=] """,            nil ],
+        [/\>/,            """ [:RELATION, :>] """,              nil ],
+        [/\=\=/,          """ [:EQUALITY, :==] """,             nil ],
+        [/\!\=/,          """ [:EQUALITY, :!=] """,             nil ],
 
 # Keywords
         [/\bif\b/,            """ [:IF, nil] """,               nil ],
@@ -223,4 +225,3 @@ module CScriptScanner
     alias :w? :place
 
 end
-    

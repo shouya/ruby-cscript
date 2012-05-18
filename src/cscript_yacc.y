@@ -16,6 +16,9 @@ prechigh
     left        '*' '/'
     left        '+' '-'
 
+    left        EQUALITY
+    left        RELATION
+
     right       '='
 
     noassoc     '%'
@@ -51,6 +54,7 @@ rule
         | unary_op      { return val[0] }
         | binary_op     { return val[0] }
         | func_call     { return val[0] }
+        | comp_expr     { return val[0] }
     ;
 
     binary_op: expr '+' expr    { return mkCtrl(:PLUS, val[0], val[2]) }
@@ -132,6 +136,12 @@ rule
         | NEXT          { return mkCtrl(:NEXT) }
         | BREAK         { return mkCtrl(:BREAK) }
     ;
+
+    comp_expr:
+          expr RELATION expr { return mkCtrl(:COMPARISON, *val[0..-1]) }
+        | expr EQUALITY expr { return mkCtrl(:COMPARISON, *val[0..-1]) }
+    ;
+
 
 end
 

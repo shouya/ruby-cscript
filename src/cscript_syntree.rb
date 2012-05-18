@@ -105,7 +105,12 @@ module CScriptSyntaxTree
             ret = '. ' * lvl
             ret << "#{self.type}  (#{place_str})\n"
             self.op.each do |op|
-                ret << op.print(lvl + 1) if op
+                if op.respond_to? :print 
+                    ret << op.print(lvl + 1) if op
+                else
+                    ret << '. ' * (lvl + 1) << op.to_s << "\n" if op
+                end
+
             end
             ret << @next.print(lvl) if @next
             ret

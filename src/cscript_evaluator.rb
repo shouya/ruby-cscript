@@ -33,6 +33,8 @@ module CScriptEvaluator
                      eval_assignment(@eval_tree)
                  when :NAME
                      eval_name(@eval_tree)
+                 when :COMPARISON
+                     eval_comp(@eval_tree)
                  when :FUNC_CALL
                      eval_func_call(@eval_tree)
                  else
@@ -126,24 +128,48 @@ module CScriptEvaluator
     end
     def eval_func_call(tree)
         name = tree.op[0]
-        args = tree.op[1]
-        evaled_args = []
-
-        args.each do |op|
-            evaled_args << evaluate(op)
-        end
-
+        args = tree.op[1].map{|x| evaluate x}
 
         f = evaluate(name)
         f.type_assert :FUNCTION, stack
         
-        param_hash = f.val.make_param_hash(evaled_args)
+        param_hash = f.val.make_param_hash(args)
         
         stack_obj = CScriptCallStack.new :function => f.val,
                                          :parent => self,
                                          :arguments => param_hash,
                                          :function_name => name.val
         return stack_obj.evaluate
+    end
+
+    def eval_comp(tree)
+        op = []
+        op[0], operator, op[1] = tree.op
+        op.map! {|x| evaluate(x) }
+
+        unless op.first.type == op.last.type then
+            raise CScriptRuntimeError,
+                "Types of ops are not same. (%s vs %s)" % [
+                    op[0].type.downcase, op[1].type.downcase],
+                stack
+        end
+        op.map! {|x| x.value}
+
+        case operator
+        when :==
+            return CScriptValue.new(op.first == op.last)
+        when :!=
+            return CScriptValue.new(op.first != op.last)
+        when :<
+            return CScriptValue.new(op.first < op.last)
+        when :<=
+            return CScriptValue.new(op.first <= op.last)
+        when :>
+            return CScriptValue.new(op.first > op.last)
+        when :>=
+            return CScriptValue.new(op.first >= op.last)
+        end
+
     end
 
     public :evaluate
