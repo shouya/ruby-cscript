@@ -1,5 +1,5 @@
 
-require_relative 'cscript_lex'
+require_relative '../cscript_lex'
 
 
 class MyLexer

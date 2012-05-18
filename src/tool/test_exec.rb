@@ -2,8 +2,8 @@
 #
 
 
-require_relative 'cscript_runtime'
-require_relative 'cscript_parser'
+require_relative '../cscript_runtime'
+require_relative '../cscript_parser'
 
 
 parser = CScriptParser.new

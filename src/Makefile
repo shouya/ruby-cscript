@@ -5,8 +5,13 @@ main_rule: cscript_yacc.y
 	$(RACC) -o$(OUTPUT) -d -v $<
 
 
-.PHONY : try
-try: test_exec.rb
+try: exec
+.PHONY : exec
+exec: tool/test_exec.rb
+	ruby $<
+
+.PHONY : lexer
+lexer: tool/test_lexer.rb
 	ruby $<
 
 
