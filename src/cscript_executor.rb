@@ -5,7 +5,7 @@
 
 require_relative 'cscript_function'
 
-require 'pp' if $DEBUG
+require 'pp' if $CS_DEBUG
 
 class CScriptLoopControl < Exception; end
 class CScriptLoopControlRedo < CScriptLoopControl; end

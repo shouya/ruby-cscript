@@ -21,7 +21,7 @@ prechigh
 
     right       '='
 
-    noassoc     '%'
+    noassoc     EMIT
 
     noassoc     ELSE
     noassoc     LOWER_THAN_ELSE
@@ -49,7 +49,7 @@ rule
         
     expr: literal       { return val[0] }
         | name          { return val[0] }
-        | '%' expr      { return mkCtrl(:PRINT, val[1]) }
+        | EMIT expr     { return mkCtrl(:DEBUG_EMIT, val[1]) }
         | '(' expr ')'  { return val[1] }
         | assignment    { return val[0] }
         | unary_op      { return val[0] }

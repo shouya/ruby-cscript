@@ -20,6 +20,10 @@ class CScriptRunStack
     attr_accessor :tree, :table   # content data
     attr_accessor :call_stack
 
+    if $CS_DEBUG
+        attr_accessor :emissions
+    end
+
     def initialize(parent = nil, type = nil)
         @type = type
         @run_ptr = nil
@@ -125,5 +129,16 @@ class CScriptRunStack
     end
     def running?
         return @state == :running
+    end
+
+    if $CS_DEBUG
+        def emit(*args)
+            @emissions ||= []
+            if args.length == 1
+                @emissions << args.first
+            else
+                @emissions << args
+            end
+        end
     end
 end

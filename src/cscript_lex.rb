@@ -86,6 +86,8 @@ module CScriptScanner
         [/\btrue\b/,          """ [:BOOL, true] """,            nil ],
         [/\bfalse\b/,         """ [:BOOL, false] """,           nil ],
 
+        [/\bEMIT\b/,          """ [:EMIT, nil] """,             nil ],
+
 # Some Other Symbols
         [/\+\+/,          """ [:INCREASE, nil] """,         nil ],
         [/\-\-/,          """ [:DECREASE, nil] """,         nil ],

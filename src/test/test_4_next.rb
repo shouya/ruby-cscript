@@ -1,3 +1,13 @@
+require_relative 'common'
+
+
+simple_test [
+    ["now redo\n"] * 2,
+    "now break\n",
+    5,
+    ["now next\n"] * 2
+] {
+    <<'HERE'
 /* This program is intended to try the loop features:
     * next
     * break
@@ -10,28 +20,26 @@ a = 1;
 while (a = a + 1)  { /* a: 1 + 1 => 2 */
     if (b = b - 1) { /* b: 2 -> 1 -> 0 (reject) */
         a = a + b; /* a: +2 -> +1 => 5 */
-        % "now redo\n"; /* print this twice */
+        EMIT "now redo\n"; /* print this twice */
         redo;
     }
-    % "now break\n"; /* and print this once */
+    EMIT "now break\n"; /* and print this once */
     break;
 }
 
-% a; /* should output 5  */
+EMIT a; /* should output 5  */
 
 
 a = 11;
 while (a = a - 3) {
     if (a = a - 1) {
-        % a;
-        % "now next\n";
+        EMIT "now next\n";
         next;
     }
-    % "break\n";
+    EMIT "break\n";
     break; /* won't be triggered */
 }
 
-/* known problem, the loop control will fall through function calls,
-   how to curb this?
-   */
 
+HERE
+}

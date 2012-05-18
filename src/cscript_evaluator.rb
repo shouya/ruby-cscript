@@ -25,8 +25,8 @@ module CScriptEvaluator
                      eval_literal(@eval_tree)
                  when :PLUS, :MINUS, :MULTIPLY, :DIVIDE
                      eval_binary_arithmetic(@eval_tree)
-                 when :PRINT
-                     eval_debug_print(@eval_tree)
+                 when :DEBUG_EMIT
+                     eval_debug_emit(@eval_tree)
                  when :UMINUS, :UPLUS
                      eval_unary_arithmetic(@eval_tree)
                  when :ASSIGN
@@ -114,15 +114,9 @@ module CScriptEvaluator
 
         return value
     end
-    def eval_debug_print(tree)
+    def eval_debug_emit(tree)
         op = evaluate(tree.op[0])
-        if op.type_is? :INTEGER and op.to_i == -1
-            puts stack.inspect
-        elsif op.type_is? :INTEGER
-            puts op.val
-        elsif op.type_is? :STRING
-            print op.val
-        end
+        root.emit(op.val)
 
         return CScriptValue.new(0)
     end
@@ -174,7 +168,7 @@ module CScriptEvaluator
 
     public :evaluate
     private :eval_literal, :eval_binary_arithmetic, :eval_unary_arithmetic,
-        :eval_assignment, :eval_name, :eval_debug_print, :eval_func_call,
+        :eval_assignment, :eval_name, :eval_debug_emit, :eval_func_call,
         :eval_comparison
 
 end

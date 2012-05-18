@@ -12,4 +12,16 @@ class CScriptRuntime
         stack ||= CScriptRunStack.new(nil, :root)
         stack.execute(tree)
     end
+
+    if $CS_DEBUG
+        attr_accessor :emissions
+    end
+
+    def execute(tree, stack = nil)
+        stack ||= CScriptRunStack.new(nil, :root)
+        stack.execute(tree)
+        if $CS_DEBUG
+            @emissions = stack.emissions
+        end
+    end
 end
