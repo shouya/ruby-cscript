@@ -61,6 +61,8 @@ module CScriptSyntaxTree
                 return :INTEGER
             when String
                 return given_type || :STRING
+            when TrueClass, FalseClass
+                return :BOOL
             else
                 return :UNKNOWN
             end

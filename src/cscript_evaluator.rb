@@ -21,7 +21,7 @@ module CScriptEvaluator
                      @eval_tree
                  when :EMPTY
                      nil
-                 when :INTEGER, :STRING
+                 when :INTEGER, :STRING, :BOOL
                      eval_literal(@eval_tree)
                  when :PLUS, :MINUS, :MULTIPLY, :DIVIDE
                      eval_binary_arithmetic(@eval_tree)
@@ -34,7 +34,7 @@ module CScriptEvaluator
                  when :NAME
                      eval_name(@eval_tree)
                  when :COMPARISON
-                     eval_comp(@eval_tree)
+                     eval_comparison(@eval_tree)
                  when :FUNC_CALL
                      eval_func_call(@eval_tree)
                  else
@@ -142,7 +142,7 @@ module CScriptEvaluator
         return stack_obj.evaluate
     end
 
-    def eval_comp(tree)
+    def eval_comparison(tree)
         op = []
         op[0], operator, op[1] = tree.op
         op.map! {|x| evaluate(x) }
@@ -174,6 +174,7 @@ module CScriptEvaluator
 
     public :evaluate
     private :eval_literal, :eval_binary_arithmetic, :eval_unary_arithmetic,
-        :eval_assignment, :eval_name, :eval_debug_print
+        :eval_assignment, :eval_name, :eval_debug_print, :eval_func_call,
+        :eval_comparison
 
 end

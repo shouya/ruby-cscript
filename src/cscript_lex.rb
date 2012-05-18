@@ -48,9 +48,9 @@ module CScriptScanner
         [/./,             """ nil """,                    :COMM ],
 
 # Comparisons
-        [/\<\=/,           """ [:RELATION, :<=] """,            nil ],
+        [/\<\=/,          """ [:RELATION, :<=] """,             nil ],
         [/\</,            """ [:RELATION, :<] """,              nil ],
-        [/\>\=/,           """ [:RELATION, :>=] """,            nil ],
+        [/\>\=/,          """ [:RELATION, :>=] """,             nil ],
         [/\>/,            """ [:RELATION, :>] """,              nil ],
         [/\=\=/,          """ [:EQUALITY, :==] """,             nil ],
         [/\!\=/,          """ [:EQUALITY, :!=] """,             nil ],
@@ -83,6 +83,8 @@ module CScriptScanner
         [/\bint\b/,           """ [:INT, nil] """,              nil ],
         [/\bauto\b/,          """ [:AUTO, nil] """,             nil ],
         [/\bextern\b/,        """ [:EXTERN, nil] """,           nil ],
+        [/\btrue\b/,          """ [:BOOL, true] """,            nil ],
+        [/\bfalse\b/,         """ [:BOOL, false] """,           nil ],
 
 # Some Other Symbols
         [/\+\+/,          """ [:INCREASE, nil] """,         nil ],

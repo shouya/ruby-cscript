@@ -37,6 +37,7 @@ rule
 
     literal: STRING { return mkVal(val[0]) }
         | INTEGER   { return mkVal(val[0]) }
+        | BOOL      { return mkVal(val[0]) }
     ;
 
     name: NAME          { return mkVal(val[0], :NAME) }
