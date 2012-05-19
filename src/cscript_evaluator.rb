@@ -8,133 +8,165 @@ require_relative 'cscript_function'
 require_relative 'cscript_callstack'
 
 module CScriptEvaluator
+    def self.handler(*handle_types, &block)
+        @@handlers ||={}
+
+        evaled = []
+        opt = {}
+        if handle_types.last.class == Hash
+            opt = handle_types.pop
+        end
+        if handle_types.last.class == Array
+            evaled = handle_types.pop
+        end
+
+        method_name = 'eval_' + handle_types.map(&:to_s).join('_')
+        method_name = method_name.intern
+
+        # Cool meta stuff! borrow from from source of sinatra
+        define_method(method_name, block)
+        method = instance_method method_name
+        remove_method method_name
+
+        @@handlers.store(handle_types, [method, evaled, opt])
+    end
+
+    def eval_error(msg_or_exc, *others)
+        if others.empty? or others.last.class != Array then
+            others.push(stack)
+        end
+
+        if msg_or_exc.is_a? Exception
+            raise msg_or_exc, *others
+        elsif msg_or_exc.is_a? String
+            raise CScriptRuntimeError, msg_or_exc, *others
+        end
+    end
+
+
+    def newval(*args)
+        CScriptValue.new(*args)
+    end
+
+    def dispatch(tree)
+        @@handlers ||={}
+        retval = nil
+
+        matched = @@handlers.each do |match, (method, evaled, opt)|
+            next unless match.include? tree.type
+
+            args = []
+
+            unless opt[:raw] == true
+                tree.op.each_with_index do |op, idx|
+                    if evaled.include? idx
+                        args << evaluate(op)
+                    else
+                        args << op
+                    end
+                end
+            else
+                args << tree
+            end
+
+            retval = method.bind(self).call(*args)
+
+            break :yes
+        end
+
+        if matched != :yes
+            eval_error('Not handled type: %s.' % tree.type.to_s)
+        end
+
+        return retval
+    end
+
     def evaluate(tree)
-        if ! running? and ! [:if, :while].include? @type then
+        if not running? and ! [:if, :while].include? @type then
             warn 'Unexpected evaluating without running itself'
         end
+
         @eval_tree = tree
 
-        @i = 0
-
-        retval = case @eval_tree
-                 when CScriptValue
-                     @eval_tree
-                 when :EMPTY
-                     nil
-                 when :INTEGER, :STRING, :BOOL
-                     eval_literal(@eval_tree)
-                 when :PLUS, :MINUS, :MULTIPLY, :DIVIDE
-                     eval_binary_arithmetic(@eval_tree)
-                 when :DEBUG_EMIT
-                     eval_debug_emit(@eval_tree)
-                 when :UMINUS, :UPLUS
-                     eval_unary_arithmetic(@eval_tree)
-                 when :ASSIGN
-                     eval_assignment(@eval_tree)
-                 when :NAME
-                     eval_name(@eval_tree)
-                 when :COMPARISON
-                     eval_comparison(@eval_tree)
-                 when :FUNC_CALL
-                     eval_func_call(@eval_tree)
-                 when :AND
-                     eval_logic_and(@eval_tree)
-                 when :OR
-                     eval_logic_or(@eval_tree)
-                 when :NOT
-                     eval_logic_not(@eval_tree)
-                 else
-                     warn "Unknown expression type #{@eval_tree.type}"
-                 end
-        retval
+        dispatch(tree)
     end
 
-    def eval_literal(tree)
-        return CScriptValue.new(tree.val)
+
+    handler :EMPTY do
+        nil
     end
-    def eval_binary_arithmetic(tree)
-        op1, op2 = tree.op[0..1].map {|x| evaluate x }
 
+    handler :INTEGER, :STRING, :BOOL, :FUNCTION, :raw => true do |tree|
+        newval(tree.val)
+    end
 
-        case tree
-        when :PLUS
-            if op1.type_is? :INTEGER and op2.type_is? :INTEGER then
-                return CScriptValue.new(op1.val + op2.val)
-            elsif op1.type_is? :STRING and op2.type_is? :STRING then
-                return CScriptValue.new(op1.val + op2.val)
-            else
-                raise CScriptRuntimeError,
-                    'Cannot operate PLUS between' \
-                    "`#{op1.type}' and `#{op2.type}'.",
-                    stack
-            end
-        when :MINUS
-            op1.type_assert :INTEGER, self
-            op2.type_assert :INTEGER, self
-            return CScriptValue.new(op1.val - op2.val)
-        when :MULTIPLY
-            if op1.type_is? :INTEGER and op2.type_is? :INTEGER then
-                return CScriptValue.new(op1.val * op2.val)
-            elsif op1.type_is? :STRING and op2.type_is? :INTEGER then
-                return CScriptValue.new(op1.val * op2.val)
-            else
-                raise CScriptRuntimeError,
-                    'Cannot operate MULTIPLY between' \
-                    "`#{op1.type}' and `#{op2.type}",
-                    stack
-            end
-        when :DIVIDE
-            op1.type_assert :INTEGER, self
-            op2.type_assert :INTEGER, self
-            return CScriptValue.new(op1.val / op2.val)
+    handler :PLUS, [0,1] do |op1, op2|
+        if op1.type_is? :INTEGER and op2.type_is? :INTEGER then
+            newval(op1.val + op2.val)
+        elsif op1.type_is? :STRING and op2.type_is? :STRING then
+            newval(op1.val + op2.val)
+        else
+            eval_error("Type Error")
         end
     end
-    def eval_unary_arithmetic(tree)
-        op = evaluate(tree.op[0])
 
-        case tree
-        when :UMINUS
-            op.type_assert(:INTEGER, self)
-            return CScriptValue.new(-op.val)
-        when :UPLUS
-            op.type_assert(:INTEGER, self)
-            return CScriptValue.new(op.val)
+    handler :MINUS, [0, 1] do |op1, op2|
+        op1.type_assert :INTEGER, self
+        op2.type_assert :INTEGER, self
+        newval(op1.val - op2.val)
+    end
+
+    handler :MULTIPLY, [0, 1] do |op1, op2|
+        if op1.type_is? :INTEGER and op2.type_is? :INTEGER then
+            newval(op1.val * op2.val)
+        elsif op1.type_is? :STRING and op2.type_is? :INTEGER then
+            newval(op1.val * op2.val)
+        else
+            eval_error("Type Error")
         end
     end
-    def eval_assignment(tree)
-        name = tree.op[0]
-        value = evaluate(tree.op[1])
 
+    handler :DIVIDE, [0, 1] do |op1, op2|
+        op1.type_assert :INTEGER, self
+        op2.type_assert :INTEGER, self
+        newval(op1.val / op2.val)
+    end
+
+    handler :UMINUS, [0] do |op|
+        op.type_assert :INTEGER, self
+        newval(-op.val)
+    end
+    handler :UPLUS, [0] do |op|
+        op
+    end
+
+    handler :ASSIGN, [1] do |name, value|
         if name.type != :NAME then
-            raise CScriptRuntimeError,
-                "The left of assignment must be a lvalue",
-                stack
+            eval_error "The left of assignment must be a lvalue."
         end
 
         store_variable(name.val, value)
-
-        return value
+        value
     end
-    def eval_name(tree)
-        value = query_variable(tree.val)
 
-        return value
+    handler :NAME, :raw => true do |tree|
+        query_variable(tree.val)
     end
-    def eval_debug_emit(tree)
-        op = evaluate(tree.op[0])
-        root.emit(op.val)
 
-        return CScriptValue.new(0)
+    if $CS_DEBUG then
+        handler :DEBUG_EMIT, [0] do |value|
+            root.emit(value.val)
+        end
     end
-    def eval_func_call(tree)
-        name = tree.op[0]
-        args = tree.op[1].map{|x| evaluate x}
 
+    handler :FUNC_CALL do |name, args|
         f = evaluate(name)
         f.type_assert :FUNCTION, stack
-        
+
+        args = args.map {|x| evaluate x}
+
         param_hash = f.val.make_param_hash(args)
-        
+
         stack_obj = CScriptCallStack.new :function => f.val,
                                          :parent => self,
                                          :arguments => param_hash,
@@ -142,67 +174,48 @@ module CScriptEvaluator
         return stack_obj.evaluate
     end
 
-    def eval_comparison(tree)
-        op = []
-        op[0], operator, op[1] = tree.op
-        op.map! {|x| evaluate(x) }
-
-        unless op.first.type == op.last.type then
-            raise CScriptRuntimeError,
-                "Types of ops are not same. (%s vs %s)" % [
-                    op[0].type.downcase, op[1].type.downcase],
-                stack
+    handler :COMPARISON, [0, 2] do |op1, operator, op2|
+        unless op1.type == op2.type then
+            eval_error "Type of operands are not same. (%s vs %s)." % [
+                    op[0].type.downcase, op[1].type.downcase]
         end
-        op.map! {|x| x.value}
+        op1, op2 = op1.value, op2.value
 
         case operator
         when :==
-            return CScriptValue.new(op.first == op.last)
+            return newval(op1 == op2)
         when :!=
-            return CScriptValue.new(op.first != op.last)
+            return newval(op1 != op2)
         when :<
-            return CScriptValue.new(op.first < op.last)
+            return newval(op1 < op2)
         when :<=
-            return CScriptValue.new(op.first <= op.last)
+            return newval(op1 <= op2)
         when :>
-            return CScriptValue.new(op.first > op.last)
+            return newval(op1 > op2)
         when :>=
-            return CScriptValue.new(op.first >= op.last)
+            return newval(op1 >= op2)
         end
-
     end
 
-    def eval_logic_and(tree)
-        op1, op2 = tree.op
-        op1 = evaluate(op1)
+    handler :AND, [0], &lambda {|x, y|
+        return newval(false) unless x.is_true?
+        y = evaluate(y)
+        return newval(false) unless x.is_true?
 
-        return CScriptValue.new(false) unless op1.is_true?
+        return newval(true)
+    }
 
-        op2 = evaluate(op2)
-        return CScriptValue.new(false) unless op2.is_true?
+    handler :OR, [0], &lambda {|x, y|
+        return x if x.is_true?
 
-        return CScriptValue.new(true)
+        y = evaluate(y)
+        return y if y.is_true?
+
+        return newval(false)
+    }
+
+    handler :NOT, [0] do |v|
+        return newval(v.is_false?)
     end
-    def eval_logic_or(tree)
-        op1, op2 = tree.op
-        op1 = evaluate(op1)
-    
-        return op1 if op1.is_true?
-
-        op2 = evaluate(op2)
-        return op2 if op2.is_true?
-
-        return CScriptValue.new(false)
-    end
-            
-    def eval_logic_not(tree)
-        op = evaluate(tree.op.first)
-        return CScriptValue.new(op.is_false?)
-    end
-
-    public :evaluate
-    private :eval_literal, :eval_binary_arithmetic, :eval_unary_arithmetic,
-        :eval_assignment, :eval_name, :eval_debug_emit, :eval_func_call,
-        :eval_comparison
 
 end
