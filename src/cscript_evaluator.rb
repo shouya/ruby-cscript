@@ -37,6 +37,12 @@ module CScriptEvaluator
                      eval_comparison(@eval_tree)
                  when :FUNC_CALL
                      eval_func_call(@eval_tree)
+                 when :AND
+                     eval_logic_and(@eval_tree)
+                 when :OR
+                     eval_logic_or(@eval_tree)
+                 when :NOT
+                     eval_logic_not(@eval_tree)
                  else
                      warn "Unknown expression type #{@eval_tree.type}"
                  end
@@ -164,6 +170,34 @@ module CScriptEvaluator
             return CScriptValue.new(op.first >= op.last)
         end
 
+    end
+
+    def eval_logic_and(tree)
+        op1, op2 = tree.op
+        op1 = evaluate(op1)
+
+        return CScriptValue.new(false) unless op1.is_true?
+
+        op2 = evaluate(op2)
+        return CScriptValue.new(false) unless op2.is_true?
+
+        return CScriptValue.new(true)
+    end
+    def eval_logic_or(tree)
+        op1, op2 = tree.op
+        op1 = evaluate(op1)
+    
+        return op1 if op1.is_true?
+
+        op2 = evaluate(op2)
+        return op2 if op2.is_true?
+
+        return CScriptValue.new(false)
+    end
+            
+    def eval_logic_not(tree)
+        op = evaluate(tree.op.first)
+        return CScriptValue.new(op.is_false?)
     end
 
     public :evaluate

@@ -11,13 +11,16 @@
 class CScriptParser
 
 prechigh
-    right       UMINUS UPLUS
+    right       UMINUS UPLUS '!'
 
     left        '*' '/'
     left        '+' '-'
 
     left        EQUALITY
     left        RELATION
+
+    left        LOGAND
+    left        LOGOR
 
     right       '='
 
@@ -56,6 +59,7 @@ rule
         | binary_op     { return val[0] }
         | func_call     { return val[0] }
         | comp_expr     { return val[0] }
+        | logic_expr    { return val[0] }
     ;
 
     binary_op: expr '+' expr    { return mkCtrl(:PLUS, val[0], val[2]) }
@@ -143,6 +147,11 @@ rule
         | expr EQUALITY expr { return mkCtrl(:COMPARISON, *val[0..-1]) }
     ;
 
+
+    logic_expr: '!' expr        { return mkCtrl(:NOT, val[1]) }
+        | expr LOGAND expr      { return mkCtrl(:AND, val[0], val[2]) }
+        | expr LOGOR expr       { return mkCtrl(:OR,  val[0], val[2]) }
+    ;
 
 end
 
