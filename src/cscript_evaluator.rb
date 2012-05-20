@@ -20,6 +20,8 @@ module CScriptEvaluator
             evaled = handle_types.pop
         end
 
+=begin
+        # Not needed yet, use `Object#instance_exec` instead
         method_name = 'eval_' + handle_types.map(&:to_s).join('_')
         method_name = method_name.intern
 
@@ -27,8 +29,9 @@ module CScriptEvaluator
         define_method(method_name, block)
         method = instance_method method_name
         remove_method method_name
+=end
 
-        @@handlers.store(handle_types, [method, evaled, opt])
+        @@handlers.store(handle_types, [block, evaled, opt])
     end
 
     def eval_error(msg_or_exc, *others)
@@ -52,7 +55,7 @@ module CScriptEvaluator
         @@handlers ||={}
         retval = nil
 
-        matched = @@handlers.each do |match, (method, evaled, opt)|
+        matched = @@handlers.each do |match, (block, evaled, opt)|
             next unless match.include? tree.type
 
             args = []
@@ -69,7 +72,7 @@ module CScriptEvaluator
                 args << tree
             end
 
-            retval = method.bind(self).call(*args)
+            retval = self.instance_exec(*args, &block)
 
             break :yes
         end
