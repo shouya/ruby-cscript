@@ -132,4 +132,6 @@ module CScriptSyntaxTree
     def mkVal(val, *type)
         return CSValue.new(val, *type)
     end
+
 end
+

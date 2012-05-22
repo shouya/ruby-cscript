@@ -3,7 +3,7 @@
 # Shou Ya   morning in 17 Apr, 2012
 #
 
-require_relative 'cscript_syntree'
+require_relative 'cscript_syntax_tree'
 require_relative 'cscript_function'
 require_relative 'cscript_callstack'
 

@@ -33,9 +33,9 @@ preclow
 start main_rule
 
 rule
-    main_rule:           { return mkCtrl(:EMPTY_STMT) }
-        | main_rule stmt { return val[0].append val[1] }
-        | main_rule func_def { return val[0].append val[1] }
+    main_rule:           { return mkCont(:STATEMENTS) }
+        | main_rule stmt { return val[0] << val[1] }
+        | main_rule func_def { return val[0] << val[1] }
     ;
 
     literal: STRING { return mkVal(val[0]) }
@@ -46,13 +46,13 @@ rule
     name: NAME          { return mkVal(val[0], :NAME) }
     ;
     
-    name_list: name     { return mkCtrl(:NAME_LST) << val[0] }
+    name_list: name     { return mkCont(:NAME_LST) << val[0] }
         | name_list ',' name    { val[0] << val[2] }
     ;
         
     expr: literal       { return val[0] }
         | name          { return val[0] }
-        | EMIT expr     { return mkCtrl(:DEBUG_EMIT, val[1]) }
+        | EMIT expr     { return mkMac(:DEBUG_EMIT, val[1]) }
         | '(' expr ')'  { return val[1] }
         | assignment    { return val[0] }
         | unary_op      { return val[0] }
@@ -62,53 +62,53 @@ rule
         | logic_expr    { return val[0] }
     ;
 
-    binary_op: expr '+' expr    { return mkCtrl(:PLUS, val[0], val[2]) }
-        | expr '-' expr         { return mkCtrl(:MINUS, val[0], val[2]) }
-        | expr '*' expr         { return mkCtrl(:MULTIPLY, val[0], val[2]) }
-        | expr '/' expr         { return mkCtrl(:DIVIDE, val[0], val[2]) }
+    binary_op: expr '+' expr    { return mkExpr(:PLUS, val[0], val[2]) }
+        | expr '-' expr         { return mkExpr(:MINUS, val[0], val[2]) }
+        | expr '*' expr         { return mkExpr(:MULTIPLY, val[0], val[2]) }
+        | expr '/' expr         { return mkExpr(:DIVIDE, val[0], val[2]) }
     ;
 
 
-    unary_op: '-' expr =UMINUS  { return mkCtrl(:UMINUS, val[1]) }
-        | '+' expr =UPLUS       { return mkCtrl(:UPLUS, val[1]) }
+    unary_op: '-' expr =UMINUS  { return mkExpr(:UMINUS, val[1]) }
+        | '+' expr =UPLUS       { return mkExpr(:UPLUS, val[1]) }
     ;
 
     assignment: name '=' expr {
-            return mkCtrl(:ASSIGN, val[0], val[2])
+            return mkExpr(:ASSIGN, val[0], val[2])
         }
     ;
 
-    expr_list: expr           { return mkCtrl(:ARG_LIST) << val[0] }
+    expr_list: expr           { return mkCont(:ARG_LIST) << val[0] }
         | expr_list ',' expr  { return val[0] << val[2] }
     ;
 
     func_call: name '(' expr_list ')' {
-            return mkCtrl(:FUNC_CALL, val[0], val[2]);
+            return mkExpr(:FUNC_CALL, val[0], val[2]);
         }
         | name '(' ')' {
-            return mkCtrl(:FUNC_CALL, val[0], mkCtrl(:ARG_LIST))
+            return mkExpr(:FUNC_CALL, val[0], mkCtrl(:ARG_LIST))
         }
     ;
 
     func_def: DEF name '(' ')' '{' stmt_lst '}' {
-            return mkCtrl(:FUNC_DEF, val[1], mkCtrl(:NAME_LST), val[5])
+            return mkStmt(:FUNC_DEF, val[1], mkCont(:NAME_LST), val[5])
         }
         | DEF name '(' name_list ')' '{' stmt_lst '}' {
-            return mkCtrl(:FUNC_DEF, val[1], val[3], val[6])
+            return mkStmt(:FUNC_DEF, val[1], val[3], val[6])
         }
     ;
 
-    stmt_lst: stmt      { return val[0] }
-        | stmt_lst stmt { return val[0].append val[1] }
+    stmt_lst: stmt      { return mkCont(val[0]) }
+        | stmt_lst stmt { return val[0] << val[1] }
     ;
 
 
-    stmt: expr ';'      { return mkCtrl(:EXPR_STMT, val[0]) }
+    stmt: expr ';'      { return mkStmt(:EXPR_STMT, val[0]) }
         | x_if          { return val[0] }
         | x_while       { return val[0] }
         | x_return ';'  { return val[0] }
         | loop_ctrl ';' { return val[0] }
-        | ';'           { return mkCtrl(:EMPTY_STMT) }
+        | ';'           { return mkStmt(:EMPTY_STMT) }
     ; 
 
     stmt_or_blk: stmt           { return val[0] }
@@ -119,38 +119,38 @@ rule
     ;
 
     if_part: IF '(' expr ')' stmt_or_blk {
-            return mkCtrl(:IF_PART, val[2], val[4])
+            return mkStmt(:IF_PART, val[2], val[4])
         }
     ;
 
     else_part: ELSE stmt_or_blk {
-            return mkCtrl(:ELSE_PART, val[1])
+            return mkStmt(:ELSE_PART, val[1])
         }
     ;
 
     x_while: WHILE '(' expr ')' stmt_or_blk {
-            return mkCtrl(:WHILE, val[2], val[4]);
+            return mkStmt(:WHILE, val[2], val[4]);
         }
     ;
 
-    x_return: RETURN    { return mkCtrl(:RETURN) }
-        | RETURN expr   { return mkCtrl(:RETURN, val[1]) }
+    x_return: RETURN    { return mkStmt(:RETURN) }
+        | RETURN expr   { return mkStmt(:RETURN, val[1]) }
     ;
 
-    loop_ctrl: REDO     { return mkCtrl(:REDO) }
-        | NEXT          { return mkCtrl(:NEXT) }
-        | BREAK         { return mkCtrl(:BREAK) }
+    loop_ctrl: REDO     { return mkStmt(:REDO) }
+        | NEXT          { return mkStmt(:NEXT) }
+        | BREAK         { return mkStmt(:BREAK) }
     ;
 
     comp_expr:
-          expr RELATION expr { return mkCtrl(:COMPARISON, *val[0..-1]) }
-        | expr EQUALITY expr { return mkCtrl(:COMPARISON, *val[0..-1]) }
+          expr RELATION expr { return mkExpr(:COMPARISON, *val[0..-1]) }
+        | expr EQUALITY expr { return mkExpr(:COMPARISON, *val[0..-1]) }
     ;
 
 
-    logic_expr: '!' expr        { return mkCtrl(:NOT, val[1]) }
-        | expr LOGAND expr      { return mkCtrl(:AND, val[0], val[2]) }
-        | expr LOGOR expr       { return mkCtrl(:OR,  val[0], val[2]) }
+    logic_expr: '!' expr        { return mkExpr(:NOT, val[1]) }
+        | expr LOGAND expr      { return mkExpr(:AND, val[0], val[2]) }
+        | expr LOGOR expr       { return mkExpr(:OR,  val[0], val[2]) }
     ;
 
 end

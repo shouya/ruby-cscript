@@ -9,28 +9,15 @@ require_relative 'cscript_yacc'
 # and the lexer program
 require_relative 'cscript_lex'
 # syntax tree support
-require_relative 'cscript_syntree'
+require_relative 'cscript_syntax_tree'
 
 
 # this class is generated in `cscript_yacc.rb'
 CScriptParser.class_eval do
     include CScriptScanner
-    include CScriptSyntaxTree
+    include CScript::SyntaxTree
+    include CScript::SyntaxTree.Shortcut {|obj| obj.place = where?}
 
-    
-    alias :old_mkCtrl :mkCtrl
-    alias :old_mkVal :mkVal
-    
-    def mkCtrl(*arg)
-        obj = old_mkCtrl(*arg)
-        obj.place = where?
-        obj
-    end
-    def mkVal(*arg)
-        obj = old_mkVal(*arg)
-        obj.place = where?
-        obj
-    end
 
 =begin
     Methods:
