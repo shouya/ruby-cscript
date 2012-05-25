@@ -5,35 +5,41 @@
 #
 
 
-class CScriptArugmentError < CScriptRuntimeError; end
+require_relative 'cscript'
 
-class CScriptFunction
-    attr_accessor :parameters, :body, :name
-    
-    def initialize(body, parameters = nil, name)
-        @body = body
-        @parameters = parameters || []
-        @name = name
-    end
+CScript::Runtime  # to load runtime error
 
-    def validate_body
-        # validate some syntax error or stuff here
-        return true
-    end
+module CScript
+    class ArugmentError < RuntimeError; end
 
-    def validate_arguments(args)
-        # could add more validation rules here
-        return true if args.length == @parameters.length
-        return false
-    end
-    def make_param_hash(args)
-        if ! validate_arguments(args) then
-            raise CScriptArgumentError,
-                'Argument(s) not valid',
-                $run_ptr.stack
+    class Function
+        attr_accessor :parameters, :body, :name
+
+        def initialize(body, parameters = nil, name)
+            @body = body
+            @parameters = parameters || []
+            @name = name
         end
 
-        return Hash[ *@parameters.zip(args).flatten ]
-    end
-end
+        def validate_body
+            # validate some syntax error or stuff here
+            return true
+        end
 
+        def validate_arguments(args)
+            # could add more validation rules here
+            return true if args.length == @parameters.length
+            return false
+        end
+        def make_parameters_hash(args)
+            if ! validate_arguments(args) then
+                raise ArgumentError,
+                    'Argument(s) not valid',
+                    $run_ptr.stack
+            end
+
+            return Hash[ *@parameters.zip(args).flatten ]
+        end
+    end
+
+end

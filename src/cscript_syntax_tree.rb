@@ -1,7 +1,6 @@
 # CScript Syntax Tree
 
 
-require 'pp' if $CS_DEBUG
 require 'json'
 
 module CScript
@@ -28,15 +27,26 @@ module CScript
             def type_is? (*test_type)
                 return test_type.include? @type
             end
+            def nodetype
+                classname = self.class.to_s.gsub /.*::/, ''
+                strout = classname[0].downcase
+                classname[1..-1].each_char do |c|
+                    strout << (c==c.downcase ? c : "_#{c.downcase}")
+                end
+                return strout.intern
+            end
             def as_json
-                json = { :nodetype => :node, :type => @type }
+                json = { :nodetype => nodetype, :type => @type }
                 if $CS_DEBUG
                     json.merge({ :place => @place })
                 end
                 json
             end
             def to_json(*)
-                return JSON.pretty_generate(as_json)
+                return JSON.dump(as_json)
+            end
+            def tree_hash
+                JSON.load(to_json)
             end
         end
 
@@ -49,9 +59,8 @@ module CScript
                 @meta_info = meta_info || {}
             end
             def as_json
-                super.merge({ :nodetype => :tree,
-                              :meta_info => @meta_info,
-                              :root => @root })
+                super.merge({ :meta_info => @meta_info,
+                              :root => @root.as_json })
             end
         end
 
@@ -84,7 +93,7 @@ module CScript
             end
 
             def as_json
-                super.merge({ :nodetype => :value, :value => @value })
+                super.merge({ :value => @value })
             end
         end
 
@@ -93,11 +102,6 @@ module CScript
             attr_accessor :operands
             alias_method :op, :operands
             alias_method :op=, :operands=
-
-            def <<(obj)
-                @operands << obj
-                self
-            end
 
             def each(&block)
                 return @operands.each if block.nil?
@@ -110,21 +114,16 @@ module CScript
             end
 
             def as_json
-                super.merge({ :nodetype => :control,
-                              :operands => @operands.map {|x|
-                                    x.respond_to?(:as_json)? x.as_json : x}})
+                jsonified_operands = @operands.map do |x|
+                    x.respond_to?(:as_json) ? x.as_json : x
+                end
+                super.merge({ :operands => jsonified_operands })
             end
         end
 
         class Expression < Control
-            def as_json
-                super.merge({ :nodetype => :expression })
-            end
         end
         class Statement < Control
-            def as_json
-                super.merge({ :nodetype => :statement })
-            end
         end
         class Container < Node
             include Enumerable
@@ -147,15 +146,18 @@ module CScript
                 @subnodes.each(&block)
             end
             def as_json
-                super.merge({ :nodetype => :container,
-                              :subnodes => @subnodes.map(&:as_json) })
+                super.merge({ :subnodes => @subnodes.map(&:as_json) })
             end
         end
+        
+        class StatementList < Container
+        end
 
+        class ExpressionList < Container
+        end
+        class ValueList < Container
+        end
         class Macro < Control
-            def as_json
-                super.merge({ :nodetype => :macro })
-            end
         end
 
         def self.Shortcut(&hook)
@@ -167,13 +169,18 @@ module CScript
                     :Expr => Expression,
                     :Stmt => Statement,
                     :Mac => Macro,
-                    :Cont => Container
+                    #                   :Cont => Container,
+                    :SList => StatementList,
+                    :EList => ExpressionList,
+                    :VList => ValueList,
                 }
 
                 @shortcuts.each do |short, redir|
                     define_method("mk#{short}".intern) do |*args|
                         new_obj = redir.new(*args)
-                        self.instance_exec(new_obj, &hook) unless hook.nil?
+                        unless hook.nil?
+                            self.instance_exec(new_obj, &hook)
+                        end
                         return new_obj
                     end
                 end

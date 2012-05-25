@@ -1,27 +1,45 @@
-# The new runtime class for cscript project
+# The new runtime class for the cscript project
 #
-# Shou Ya   morning 17 Apr, 2012
+# Shou, 24 May, 2012
 #
 
-class CScriptRuntimeError < Exception; end
+require_relative 'cscript'
 
-require_relative 'cscript_runstack'
+module CScript
+    class RuntimeError < CScriptError; end
+    class Runtime
+        attr_reader :program
+        attr_reader :root_stack # The root runtstack
 
-class CScriptRuntime
-    def self.execute(tree, stack = nil)
-        stack ||= CScriptRunStack.new(nil, :root)
-        stack.execute(tree)
-    end
 
-    if $CS_DEBUG
-        attr_accessor :emissions
-    end
-
-    def execute(tree, stack = nil)
-        stack ||= CScriptRunStack.new(nil, :root)
-        stack.execute(tree)
-        if $CS_DEBUG
-            @emissions = stack.emissions
+        def initialize(program)
+            @program = program
+            @root_stack = RunStack.new(nil, :root)
         end
+
+        def execute_code(code_tree)
+            @root_stack.execute(code_tree)
+        end
+
+=begin Deprecated
+        def initialize(dispatcher)
+            @dispatcher = dispatcher
+            @project = dispatcher.program
+            @runstack = RunStack.new(self)
+        end
+
+        def execute(tree)
+            case
+            when tree['type'] == 'STATEMENTS'
+                @dispatcher.execute(tree)
+            else
+                @last_statement = @runstack.execute(tree)
+            end
+        end
+
+        def evaluate(tree)
+        end
+=end
     end
 end
+

@@ -7,136 +7,134 @@ require_relative 'cscript_function'
 
 require 'pp' if $CS_DEBUG
 
-class CScriptLoopControl < Exception; end
-class CScriptLoopControlRedo < CScriptLoopControl; end
-class CScriptLoopControlBreak < CScriptLoopControl
-    attr_accessor :level
-end
-class CScriptLoopControlNext < CScriptLoopControl; end
-
-module CScriptExecutor
-    def execute(tree)
-        @tree = tree
-        @state = :running
-        @current_child = nil
-        @last_value = nil
-
-        @run_ptr = @tree
-
-        loop do
-            break if @run_ptr.nil?
-            step()
-        end
-        @state = :finished
-        @last_value
+module CScript
+    class LoopControl < CScriptControl; end
+    class LoopControlRedo < LoopControl; end
+    class LoopControlBreak < LoopControl
+        attr_accessor :level
     end
+    class LoopControlNext < LoopControl; end
 
-    def step()
-        case @run_ptr
-        when :EXPR_STMT
-            @last_value = evaluate(@run_ptr.op[0])
-        when :EMPTY_STMT
-            nil
-        when :IF_PART
-            @last_value = exec_if
-        when :WHILE
-            @last_value = exec_while
-        when :FUNC_DEF
-            @last_value = exec_func_def
-        when :RETURN
-            @last_value = exec_return
-        when :REDO, :NEXT, :BREAK
-            exec_loop_ctrl
-        else
-            warn "Unknown statement: #{@run_ptr.type} at #{@run_ptr.place_str}"
-        end
-
-        @run_ptr = @run_ptr.next
-    end
-
-    def exec_if
-        if_stack = CScriptRunStack.new(self, :if)
-        @current_child = if_stack
-
-        cond = if_stack.evaluate(@run_ptr.op[0])
-        @last_value = cond
-
-        has_else_block = (@run_ptr.length == 3)
-
-        if_part = @run_ptr.op[1]
-        else_part = @run_ptr.op[2].op[0] if has_else_block
-
-        if ! cond.is_false? then
-            @last_value = if_stack.execute(if_part)
-        else
-            @last_value = if_stack.execute(else_part) if has_else_block
-        end
-
-        @current_child = nil
-        @last_value
-    end
-    def exec_while
-        while_stack = CScriptRunStack.new(self, :while)
-        @current_child = while_stack
-
-        cond = @run_ptr.op[0]
-        loop_part = @run_ptr.op[1]
-
-
-        loop do # This is the while's loop
-            cond_res = while_stack.evaluate(cond)
-            @last_value = cond_res
-
-            break if cond_res.is_false?
-
-            begin
-                @last_value = while_stack.execute(loop_part)
-            rescue CScriptLoopControlRedo
-                retry
-            rescue CScriptLoopControlBreak
-                break
-            rescue CScriptLoopControlNext
-                # Do nothing
+    class Executor
+        attr_reader :stack
+        class << self
+            attr_reader :table
+            def handle(type, &block)
+                (@table ||= {}).store(type.to_s, block)
             end
         end
 
-
-        @current_child = nil
-        @last_value
-    end
-
-    def exec_func_def
-        func_name = @run_ptr.op[0]
-        param = @run_ptr.op[1].map { |x| x.val }
-        body = @run_ptr.op[2..-1].inject { |b,n| b.append(n) }
-
-        func_obj = CScriptValue.new(
-            CScriptFunction.new(body, param, func_name.val))
-        gen_stmt = CScriptSyntaxTree::CSCtrl.new(:ASSIGN, func_name, func_obj)
-        gen_stmt.place = func_name.place
-        root.evaluate(gen_stmt)
-    end
-    def exec_return
-        has_retval = @run_ptr.op.length == 1
-        if has_retval then
-            @call_stack.return_val = evaluate(@run_ptr.op[0])
-        else
-            @call_stack.return_val = CScriptValue.new(nil)
+        def intialize(runstack)
+            @stack = runstack
         end
-        throw :return
-    end
 
-    def exec_loop_ctrl
-        case @run_ptr.type
-        when :REDO
-            raise CScriptLoopControlRedo
-        when :NEXT
-            raise CScriptLoopControlNext
-        when :BREAK
-            raise CScriptLoopControlBreak
+        def dispatch(tree)
+            assert_error "Unhandled statement type: #{tree['type']}" do
+                not self.class.table.has_key?(tree['type'])
+            end
+            self.instance_exec(tree, &self.class.table[tree['type']])
         end
-    end
-    public :execute, :step
-    private :exec_if, :exec_while
 
+        def execute(tree)
+            @stack.run_ptr = tree
+            dispatch(tree)
+        end
+
+        handle :EXPR_STMT do |tree|
+            @stack.last_value = @stack.evaluate(tree['operands'][0])
+        end
+        
+        handle :IF1 do |tree|
+            substack = RunStack.new(@stack, :if)
+            cond = tree['operands'][0]['operands'][0]
+            if_part = tree['operands'][0]['operands'][1]
+
+            if (@stack.last_value = substack.evaluate(cond)).is_true?
+                substack.execute(if_part)
+            end
+
+            @stack.last_value = substack.last_value
+        end
+
+        handle :IF2 do |tree|
+            substack = RunStack.new(@stack, :if)
+            cond = tree['operands'][0]['operands'][0]
+            if_part = tree['operands'][0]['operands'][1]
+            else_part = tree['operands'][0]['operands'][2]
+
+            if (@stack.last_value = substack.evaluate(cond)).is_true?
+                substack.execute(if_part)
+            else
+                substack.execute(else_part)
+            end
+            @stack.last_value = substack.last_value
+        end
+
+        handle :WHILE do |tree|
+            substack = RunStack.new(@stack, :while)
+            
+            cond = tree['operands'][0]['operands'][0]
+            body = tree['operands'][0]['operands'][1]
+
+            
+            loop do # Cooloop
+                cond_res = while_stack.evaluate(cond)
+                @stack.last_value = cond_res
+
+                break if cond_res.is_false?
+
+                begin
+                    substack.execute(loop_part)
+                    @stack.last_value = substack.last_value
+                rescue LoopControlRedo
+                    retry
+                rescue LoopControlBreak
+                    break
+                rescue LoopControlNext
+                    # Do nothing, it just jump from loop body
+                end
+            end
+        end
+
+        handle :FUNC_DEF do |tree|
+            func_name = tree['operands'][0]['value']
+            parameters = tree['operands'][1]['subnodes'].map{|x| x['value']}
+            body = tree['operands'][2]
+
+            func_obj = Value.new(Function.new(body, param, func_name))
+            @stack.store(func_name, func_obj)
+
+            @stack.last_value = Value.null
+        end
+
+        handle :RETURN do |tree|
+            ret_vals = tree['operands']
+
+            if ret_vals.empty?
+                @stack.callstack.return
+            else
+                @stack.callstack.return(@stack.evaluate(ret_vals.first))
+            end
+        end
+
+        handle :REDO do
+            raise LoopControlRedo
+        end
+
+        handle :NEXT do
+            raise LoopControlNext
+        end
+
+        handle :BREAK do
+            raise LoopControlBreak
+        end
+
+        handle :STATEMENTS do |tree|
+            tree['subnodes'].each do |stmt|
+                @stack.execute(stmt)
+            end
+        end
+
+        public :execute
+    end
 end

@@ -8,7 +8,7 @@
 # require 'cscript_lex'
 # include 'CScriptLexer'
 
-class CScriptParser
+class CScript::Parser
 
 prechigh
     right       UMINUS UPLUS '!'
@@ -33,7 +33,7 @@ preclow
 start main_rule
 
 rule
-    main_rule:           { return mkCont(:STATEMENTS) }
+    main_rule:           { return mkSList(:STATEMENTS) }
         | main_rule stmt { return val[0] << val[1] }
         | main_rule func_def { return val[0] << val[1] }
     ;
@@ -46,7 +46,7 @@ rule
     name: NAME          { return mkVal(val[0], :NAME) }
     ;
     
-    name_list: name     { return mkCont(:NAME_LST) << val[0] }
+    name_list: name     { return mkVList(:NAME_LST) << val[0] }
         | name_list ',' name    { val[0] << val[2] }
     ;
         
@@ -78,7 +78,7 @@ rule
         }
     ;
 
-    expr_list: expr           { return mkCont(:ARG_LIST) << val[0] }
+    expr_list: expr           { return mkEList(:ARG_LIST) << val[0] }
         | expr_list ',' expr  { return val[0] << val[2] }
     ;
 
@@ -91,14 +91,15 @@ rule
     ;
 
     func_def: DEF name '(' ')' '{' stmt_lst '}' {
-            return mkStmt(:FUNC_DEF, val[1], mkCont(:NAME_LST), val[5])
+            return mkStmt(:FUNC_DEF, val[1],
+                        mkVList(:NAME_LST), val[5])
         }
         | DEF name '(' name_list ')' '{' stmt_lst '}' {
             return mkStmt(:FUNC_DEF, val[1], val[3], val[6])
         }
     ;
 
-    stmt_lst: stmt      { return mkCont(val[0]) }
+    stmt_lst: stmt      { return mkSList(:STATEMENTS) << val[0] }
         | stmt_lst stmt { return val[0] << val[1] }
     ;
 
@@ -114,8 +115,8 @@ rule
     stmt_or_blk: stmt           { return val[0] }
         | '{' stmt_lst '}'      { return val[1] }
 
-    x_if: if_part     =LOWER_THAN_ELSE  { return val[0] }
-        | if_part else_part   { return val[0] << val[1] }
+    x_if: if_part     =LOWER_THAN_ELSE  { return mkStmt(:IF1, val[0]) }
+        | if_part else_part   { return mkStmt(:IF2, val[0], val[1]) }
     ;
 
     if_part: IF '(' expr ')' stmt_or_blk {

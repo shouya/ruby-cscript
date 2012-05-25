@@ -4,29 +4,36 @@
 #
 
 # run `racc -E -v -ocscript_yacc.rb cscript_yacc.y' to generate this file
-# the parser program
+
 require_relative 'cscript_yacc'
-# and the lexer program
-require_relative 'cscript_lex'
-# syntax tree support
-require_relative 'cscript_syntax_tree'
+require_relative 'cscript'
 
+$CS_PARSER_VERSION = '1.0'
 
-# this class is generated in `cscript_yacc.rb'
-CScriptParser.class_eval do
-    include CScriptScanner
-    include CScript::SyntaxTree
-    include CScript::SyntaxTree.Shortcut {|obj| obj.place = where?}
-
-
-=begin
-    Methods:
-        scan_string (str)       set input content
-        scan_file (file_name)   set input content
-
-        do_parse ()             start parse, return a tree object
-=end
-
+module CScript
+    Parser.class_eval do
+        include Scanner
+        # include SyntaxTree
+        include SyntaxTree.Shortcut {|node| node.place = where? }
+        
+        alias_method :do_parse_without_building_tree, :do_parse
+        def do_parse
+            tree = SyntaxTree::Tree.new(
+                do_parse_without_building_tree, {
+                    :language => 'cscript',
+                    :version => $CS_VERSION,
+                    :filename => file,
+                    :parser => {
+                        :name => 'sci', # Shou ya's Cscript Implement
+                        :version => $CS_PARSER_VERSION,
+                        :options => []
+                    },
+                    :optimizer => nil,
+                    :parse_date => Time.now()
+                })
+            return tree
+        end
+    end
 end
 
 
