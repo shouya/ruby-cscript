@@ -51,7 +51,7 @@ module CScript
             @function.make_parameters_hash(@arguments).each do |p, a|
                 @runstack.store_local(p, a)
             end
-            
+
             begin
                 @runstack.execute(@function.body)
             rescue ReturnSignal
@@ -71,7 +71,7 @@ module CScript
 
 =begin Deprecated
         def initialize(args)
-            @function = args[:function] 
+            @function = args[:function]
             @parent = args[:parent]
             @arguments = args[:arguments]
             @func_name = args[:function_name] || '<anonymous>'

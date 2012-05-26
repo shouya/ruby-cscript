@@ -19,7 +19,7 @@ module CScript
         attr_reader :executor, :evaluator # syntax tree execu/evalua-tor
         attr_reader :symbol_table # Symbol table of the runstack
         attr_reader :callstack # Runstack location in callstack
-        
+
 =begin depreacted
         attr_accessor :type, :parent, :state    # meta info
         # execution info
@@ -37,10 +37,10 @@ module CScript
             @executor = Executor.new(self)
             @evaluator = Evaluator.new(self)
             @symbol_table = SymbolTable.new(self)
-            @callstack = parent.callstack || nil
+            @callstack = parent ? parent.callstack : nil
 
             @callstack.current_runstack = self if @callstack
-            
+
             @run_ptr = @substack = @last_value = nil
         end
 
@@ -48,7 +48,7 @@ module CScript
             case tree['nodetype']
             when 'expression'
                 return evaluate(tree, *args)
-            when 'statement' or 'statement_list'
+            when 'statement', 'statement_list'
                 return execute(tree, *args)
             when 'macro'
                 return process(tree, *args)
@@ -72,7 +72,7 @@ module CScript
             @symbol_table.find(*args)
         end
         def process(*args)
-            runtime.process(self, *args)
+            @runtime.process(self, *args)
         end
 
 =begin Deprecated

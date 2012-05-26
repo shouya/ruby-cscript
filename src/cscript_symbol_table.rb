@@ -9,7 +9,7 @@ module CScript
         attr_reader :stack
         attr_accessor :symbol_table
 
-        def initialize(stack, init_table)
+        def initialize(stack, init_table = nil)
             @stack = stack
             @symbol_table = init_table || {}
         end

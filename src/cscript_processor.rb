@@ -10,14 +10,14 @@ module CScript
         class << self
             attr_reader :table
             def handle(name, &block)
-                (table ||= {}) = block
+                (@table ||= {}).store(name.to_s, block)
             end
         end
 
         def dispatch(callerx, tree)
             type = tree['type']
             assert_error 'No handler matched %s.' % type do
-                not self.class.table.has_key? type
+                self.class.table.has_key? type
             end
 
             self.instance_exec(callerx, tree, &self.class.table[type])
@@ -27,9 +27,9 @@ module CScript
 
 
         handle :DEBUG_EMIT do |c, t|
-            (c.runtime.program.emission ||= []) << c.evaluate(t['operands'][0])
+            (c.runtime.program.emissions ||= []) << c.evaluate(t['operands'][0])
         end
-        
+
     end
 end
 

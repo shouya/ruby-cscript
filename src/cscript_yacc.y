@@ -1,6 +1,6 @@
 # syntax parser of cscript project
 # generate use `racc cscript_yacc.y`
-# 
+#
 # Shou Ya
 # vim: filetype=ruby
 #
@@ -35,6 +35,7 @@ start main_rule
 rule
     main_rule:           { return mkSList(:STATEMENTS) }
         | main_rule stmt { return val[0] << val[1] }
+        | main_rule macro { return val[0] << val[1] }
         | main_rule func_def { return val[0] << val[1] }
     ;
 
@@ -45,14 +46,13 @@ rule
 
     name: NAME          { return mkVal(val[0], :NAME) }
     ;
-    
+
     name_list: name     { return mkVList(:NAME_LST) << val[0] }
         | name_list ',' name    { val[0] << val[2] }
     ;
-        
+
     expr: literal       { return val[0] }
         | name          { return val[0] }
-        | EMIT expr     { return mkMac(:DEBUG_EMIT, val[1]) }
         | '(' expr ')'  { return val[1] }
         | assignment    { return val[0] }
         | unary_op      { return val[0] }
@@ -101,8 +101,11 @@ rule
 
     stmt_lst: stmt      { return mkSList(:STATEMENTS) << val[0] }
         | stmt_lst stmt { return val[0] << val[1] }
+        | stmt_lst macro { return val[0] << val[1] }
     ;
 
+    macro: EMIT expr    { return mkMac(:DEBUG_EMIT, val[1]) }
+    ;
 
     stmt: expr ';'      { return mkStmt(:EXPR_STMT, val[0]) }
         | x_if          { return val[0] }
@@ -110,7 +113,7 @@ rule
         | x_return ';'  { return val[0] }
         | loop_ctrl ';' { return val[0] }
         | ';'           { return mkStmt(:EMPTY_STMT) }
-    ; 
+    ;
 
     stmt_or_blk: stmt           { return val[0] }
         | '{' stmt_lst '}'      { return val[1] }

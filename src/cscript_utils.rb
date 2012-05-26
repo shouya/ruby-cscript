@@ -17,8 +17,9 @@ module CScript
             warn "#{warning_message} at #{file}:#{line}" \
                 if (!yield and $CS_DEBUG)
         end
-        def assert_error(exception)
-            return if yield
+
+        Kernel.send :define_method, :assert_error do |exception, &blk|
+            return if blk.call
             if String === exception then
                 raise CScriptError, exception, caller[0..-2]
             elsif exception.is_a? CScriptError
@@ -29,5 +30,7 @@ module CScript
                 end
             end
         end
+
+
     end
 end

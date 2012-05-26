@@ -7,7 +7,7 @@
 require_relative 'cscript'
 
 module CScript
-    module Evaluator
+    class Evaluator
         attr_reader :stack
 
         class << self
@@ -23,9 +23,17 @@ module CScript
                 if handle_types.last.class == Array
                     evaled = handle_types.pop
                 end
-                handled_types.map!(&:to_s)
+                handle_types.map!(&:to_s)
+
+                method_name = 'tmpm_' + handle_types.join('_').downcase
+                method_name = method_name.intern
+
+                Object.send(:define_method, method_name, &block)
+                unbinded = Object.send(:instance_method, method_name)
+                Object.send(:remove_method, method_name)
+
                 @table.store(handle_types, {
-                    :block => block,
+                    :block => unbinded,
                     :evaluated => evaled,
                     :options => options})
             end
@@ -56,27 +64,24 @@ module CScript
             end
 
             handler = nil
-            hanlders.each do |k, v|
+            handlers.each do |k, v|
                 next unless k.include? type
                 handler = v
             end
 
             retval = nil
             args = []
-            
-            if hanlder[:options][:raw] then
+
+            if handler[:options][:raw] then
                 args << tree
             else
-                tree[:operands].each_with_index do |op, idx|
-                    args << (tree['evaluated'].include?(idx) ? \
+                tree['operands'].each_with_index do |op, idx|
+                    args << (handler[:evaluated].include?(idx) ? \
                              @stack.evaluate(op) : op)
                 end
             end
 
-            retval = self.instance_exec(*args, &lambda {|*args|
-                self.instance_exec(*args, &handler[:block])
-            })
-
+            retval = handler[:block].bind(self).call(*args)
 
             retval = Value.new(retval) unless Value === retval
 
@@ -190,7 +195,7 @@ module CScript
             end
         end
 
-        handle :AND, [0], do |x, y|
+        handle :AND, [0] do |x, y|
             return false unless x.is_true?
             y = @stack.evaluate(y)
             return false unless x.is_true?

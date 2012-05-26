@@ -19,8 +19,8 @@ module CScript
             load_program(JSON.load(json_str))
         end
         def load_program(program_tree)
-            assert_error 'Not a valid program tree' do
-                program_tree['nodetype'] == tree
+            assert_error('Not a valid program tree') do
+                program_tree['nodetype'] == 'tree'
             end
 
             @meta_info = program_tree['meta_info']
@@ -28,7 +28,7 @@ module CScript
         end
         def run
             @runtime = Runtime.new(self)
-            @runtime.execute_tree(@program_tree['root'])
+            @runtime.execute_code(@program_tree['root'])
         end
     end
 end

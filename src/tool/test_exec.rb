@@ -23,5 +23,7 @@ prog.load_json(json)
 prog.run
 
 
+puts prog.emissions.inspect
+
 
 

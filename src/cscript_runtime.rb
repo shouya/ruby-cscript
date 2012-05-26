@@ -16,7 +16,8 @@ module CScript
         def initialize(program)
             @program = program
             @root_stack = RunStack.new(nil, :root)
-            @symbol_table = SymbolTable.new
+            @root_stack.instance_exec(self) { |rt| @runtime = rt }
+            @symbol_table = SymbolTable.new(nil)
             @processor = Processor.new
         end
 

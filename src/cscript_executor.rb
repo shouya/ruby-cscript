@@ -24,13 +24,13 @@ module CScript
             end
         end
 
-        def intialize(runstack)
+        def initialize(runstack)
             @stack = runstack
         end
 
         def dispatch(tree)
             assert_error "Unhandled statement type: #{tree['type']}" do
-                not self.class.table.has_key?(tree['type'])
+                self.class.table.has_key?(tree['type'])
             end
             self.instance_exec(tree, &self.class.table[tree['type']])
         end
@@ -40,10 +40,14 @@ module CScript
             dispatch(tree)
         end
 
+        handle :EMPTY_STMT do
+            nil
+        end
+
         handle :EXPR_STMT do |tree|
             @stack.last_value = @stack.evaluate(tree['operands'][0])
         end
-        
+
         handle :IF1 do |tree|
             substack = RunStack.new(@stack, :if)
             cond = tree['operands'][0]['operands'][0]
@@ -72,11 +76,11 @@ module CScript
 
         handle :WHILE do |tree|
             substack = RunStack.new(@stack, :while)
-            
+
             cond = tree['operands'][0]['operands'][0]
             body = tree['operands'][0]['operands'][1]
 
-            
+
             loop do # Cooloop
                 cond_res = while_stack.evaluate(cond)
                 @stack.last_value = cond_res
@@ -131,7 +135,7 @@ module CScript
 
         handle :STATEMENTS do |tree|
             tree['subnodes'].each do |stmt|
-                @stack.execute(stmt)
+                @stack.dispatch(stmt)
             end
         end
 

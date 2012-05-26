@@ -16,9 +16,8 @@ module CScript
 #        attr_accessor :first_defined, :last_assigned
 
         class << self
-            @null = Value.new(nil)
             def null
-                @null
+                @null ||= Value.new(nil)
             end
             def detect_type(value)
                 case value
@@ -43,7 +42,7 @@ module CScript
 
         def initialize(value, type = nil)
             @value = value
-            @type = type || detect_type(@value)
+            @type = type || Value.detect_type(@value)
         end
 
         def type_is?(*arg)

@@ -149,7 +149,7 @@ module CScript
                 super.merge({ :subnodes => @subnodes.map(&:as_json) })
             end
         end
-        
+
         class StatementList < Container
         end
 

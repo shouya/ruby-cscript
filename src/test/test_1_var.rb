@@ -10,7 +10,7 @@ a = 3; /* global */
 
 b = 4; /* global */
 
-if (c = 2 /* local */ ) { 
+if (c = 2 /* local */ ) {
     EMIT a + b + c + 1; /* print: 10 */
 }
 

@@ -15,7 +15,7 @@ module CScript
         include Scanner
         # include SyntaxTree
         include SyntaxTree.Shortcut {|node| node.place = where? }
-        
+
         alias_method :do_parse_without_building_tree, :do_parse
         def do_parse
             tree = SyntaxTree::Tree.new(

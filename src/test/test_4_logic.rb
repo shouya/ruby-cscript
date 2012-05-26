@@ -26,7 +26,7 @@ simple_test \
         false;
     }
 
-    
+
     foo() || bar(); /* emit foo */
     foo() && bar(); /* emit foo, bar */
     bar() || foo(); /* emit bar, foo */

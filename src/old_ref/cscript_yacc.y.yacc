@@ -97,7 +97,7 @@ extern int yylineno;
 
 %%
 
-main_rule:	{ EMIT0(_EMPTY_STMT); }	
+main_rule:	{ EMIT0(_EMPTY_STMT); }
 	|	main_rule statement { EMIT0(_GLUE); }
 	|	main_rule function_defination
 	;
