@@ -13,13 +13,15 @@ parser.scan_stdin
 
 tree = parser.do_parse
 
-puts tree.to_json
+json = tree.to_json
+#puts tree.to_json
 #p tree.tree_hash
 
-puts "=== message above is syntax tree ==="
 
-CScriptRuntime.execute(tree)
+prog = CScript::Program.new
+prog.load_json(json)
+prog.run
 
-puts "=== these above is program output ==="
+
 
 

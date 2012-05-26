@@ -44,6 +44,17 @@ module CScript
             @run_ptr = @substack = @last_value = nil
         end
 
+        def dispatch(tree, *args)
+            case tree['nodetype']
+            when 'expression'
+                return evaluate(tree, *args)
+            when 'statement' or 'statement_list'
+                return execute(tree, *args)
+            when 'macro'
+                return process(tree, *args)
+            end
+        end
+
         def execute(*args)
             @executor.execute(*args)
         end
@@ -59,6 +70,9 @@ module CScript
         end
         def find(*args)
             @symbol_table.find(*args)
+        end
+        def process(*args)
+            runtime.process(self, *args)
         end
 
 =begin Deprecated

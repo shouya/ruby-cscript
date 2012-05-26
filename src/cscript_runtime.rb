@@ -10,15 +10,21 @@ module CScript
     class Runtime
         attr_reader :program
         attr_reader :root_stack # The root runtstack
-
+        attr_reader :symbol_table
+        attr_reader :processor # Macro processor
 
         def initialize(program)
             @program = program
             @root_stack = RunStack.new(nil, :root)
+            @symbol_table = SymbolTable.new
+            @processor = Processor.new
         end
 
         def execute_code(code_tree)
             @root_stack.execute(code_tree)
+        end
+        def process(callerx, tree)
+            @processor.process(callerx, tree)
         end
 
 =begin Deprecated

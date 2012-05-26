@@ -9,7 +9,7 @@ require_relative 'cscript'
 module CScript
     class Program
         attr_accessor :meta_info, :program_tree
-        attr_accessor :dispatcher
+        attr_accessor :runtime
 
         if $CS_DEBUG
             attr_accessor :emissions
@@ -27,8 +27,8 @@ module CScript
             @program_tree = program_tree
         end
         def run
-            @dispatcher = Dispatcher.new
-            @dispatcher.run(@program_tree)
+            @runtime = Runtime.new(self)
+            @runtime.execute_tree(@program_tree['root'])
         end
     end
 end
