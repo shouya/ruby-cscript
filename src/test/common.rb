@@ -21,12 +21,12 @@ module Test::Unit::Assertions
         end
         assert_equal(ems.flatten, program.emissions, msg)
     end
-    def assert_cscript_raise(prog, exp)
+    def assert_cscript_raise(prog, exc)
         parser = CScript::Parser.new
         parser.scan_string(prog)
         tree = parser.do_parse.to_json
 
-        assert_raise exp do
+        assert_raise exc do
             prog = CScript::Program.new
             prog.load_json(tree)
             prog.run
