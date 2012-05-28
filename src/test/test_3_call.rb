@@ -40,7 +40,7 @@ HERE
 end
 
 
-simple_test_raise(CScriptRuntimeError) do
+simple_test_raise(CScript::RuntimeError) do
 <<HERE
 def deep(a) {
     if (a) {

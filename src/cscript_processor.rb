@@ -27,7 +27,8 @@ module CScript
 
 
         handle :DEBUG_EMIT do |c, t|
-            (c.runtime.program.emissions ||= []) << c.evaluate(t['operands'][0])
+            (c.runtime.program.emissions ||= []) << \
+                c.evaluate(t['operands'][0]).value
         end
 
     end

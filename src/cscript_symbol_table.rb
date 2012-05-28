@@ -22,26 +22,29 @@ module CScript
             trace_global.store_local(name, value)
         end
         def store(name, value)
-            place = find_table_by_name || self
+            place = find_table_by_name(name) || self
             place.store_local(name, value)
         end
 
         def find_local(name)
-            return nil unless @stack.has_key? name
-            return @stack.fetch(name)
+            return nil unless @symbol_table.has_key? name
+            return @symbol_table.fetch(name)
         end
         def find(name)
-            return val if val = find_local(name)
+            var = find_local(name)
+            return var if var
 
             up = trace_up
-            return up.find_local(name) if up
-            return nil
+            return up.find(name) if up
+
+            error_raise "Variable #{name} not found!"
         end
 
 
         def trace_up
             return nil if @stack.nil?
-            return @stack.parent.symbol_table
+            return @stack.parent.symbol_table if @stack.parent
+            return @stack.runtime.symbol_table
         end
 
         def trace_global

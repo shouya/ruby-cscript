@@ -34,7 +34,7 @@ module CScript
             @caller = x_caller
             @runtime = x_caller ? x_caller.runtime : nil
             @function = function
-            @arguments = argumemnts || []
+            @arguments = arguments || []
 
             @return_value = nil
         end
@@ -67,7 +67,8 @@ module CScript
             @return_value = return_value
             raise ReturnSignal
         end
-
+    end
+end
 
 =begin Deprecated
         def initialize(args)
@@ -110,5 +111,5 @@ module CScript
     end
 
 =end
-end
+
 

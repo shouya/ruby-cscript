@@ -35,7 +35,6 @@ start main_rule
 rule
     main_rule:           { return mkSList(:STATEMENTS) }
         | main_rule stmt { return val[0] << val[1] }
-        | main_rule macro { return val[0] << val[1] }
         | main_rule func_def { return val[0] << val[1] }
     ;
 
@@ -86,7 +85,7 @@ rule
             return mkExpr(:FUNC_CALL, val[0], val[2]);
         }
         | name '(' ')' {
-            return mkExpr(:FUNC_CALL, val[0], mkCtrl(:ARG_LIST))
+            return mkExpr(:FUNC_CALL, val[0], mkEList(:ARG_LIST))
         }
     ;
 
@@ -101,10 +100,9 @@ rule
 
     stmt_lst: stmt      { return mkSList(:STATEMENTS) << val[0] }
         | stmt_lst stmt { return val[0] << val[1] }
-        | stmt_lst macro { return val[0] << val[1] }
     ;
 
-    macro: EMIT expr    { return mkMac(:DEBUG_EMIT, val[1]) }
+    emit_macro: EMIT expr ';'   { return mkMac(:DEBUG_EMIT, val[1]) }
     ;
 
     stmt: expr ';'      { return mkStmt(:EXPR_STMT, val[0]) }
@@ -113,6 +111,7 @@ rule
         | x_return ';'  { return val[0] }
         | loop_ctrl ';' { return val[0] }
         | ';'           { return mkStmt(:EMPTY_STMT) }
+        | emit_macro    { return val[0] }
     ;
 
     stmt_or_blk: stmt           { return val[0] }

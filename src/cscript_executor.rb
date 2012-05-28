@@ -64,7 +64,7 @@ module CScript
             substack = RunStack.new(@stack, :if)
             cond = tree['operands'][0]['operands'][0]
             if_part = tree['operands'][0]['operands'][1]
-            else_part = tree['operands'][0]['operands'][2]
+            else_part = tree['operands'][1]['operands'][0]
 
             if (@stack.last_value = substack.evaluate(cond)).is_true?
                 substack.execute(if_part)
@@ -77,18 +77,18 @@ module CScript
         handle :WHILE do |tree|
             substack = RunStack.new(@stack, :while)
 
-            cond = tree['operands'][0]['operands'][0]
-            body = tree['operands'][0]['operands'][1]
+            cond = tree['operands'][0]
+            body = tree['operands'][1]
 
 
             loop do # Cooloop
-                cond_res = while_stack.evaluate(cond)
+                cond_res = substack.evaluate(cond)
                 @stack.last_value = cond_res
 
                 break if cond_res.is_false?
 
                 begin
-                    substack.execute(loop_part)
+                    substack.execute(body)
                     @stack.last_value = substack.last_value
                 rescue LoopControlRedo
                     retry
@@ -102,11 +102,12 @@ module CScript
 
         handle :FUNC_DEF do |tree|
             func_name = tree['operands'][0]['value']
-            parameters = tree['operands'][1]['subnodes'].map{|x| x['value']}
+            parameters = tree['operands'][1]['subnodes']
+            parameters.map!{|x| x['value']}
             body = tree['operands'][2]
 
-            func_obj = Value.new(Function.new(body, param, func_name))
-            @stack.store(func_name, func_obj)
+            func_obj = Value.new(Function.new(body, parameters, func_name))
+            @stack.store_global(func_name, func_obj)
 
             @stack.last_value = Value.null
         end

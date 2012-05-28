@@ -1,7 +1,7 @@
 require_relative 'common'
 
 
-simple_test([10, 11], CScriptRuntimeError) {
+simple_test [10, 11] {
     <<HERE
 /* testing variables definition and use */
 
@@ -22,7 +22,7 @@ EMIT a + b;
 HERE
 }
 
-simple_test_raise(CScriptRuntimeError) {
+simple_test_raise(RuntimeError) {
     <<HERE
 if (c = 2) {
     1;

@@ -31,6 +31,11 @@ module CScript
             end
         end
 
+        Kernel.send :define_method, :error_raise do |*args|
+            raise RuntimeError, *args if String === args[0]
+            raise *args
+        end
+
 
     end
 end

@@ -4,31 +4,32 @@
 require 'test/unit'
 
 $CS_DEBUG = 1
-require_relative '../cscript_parser'
-require_relative '../cscript_runtime'
+require_relative '../cscript'
 
 module Test::Unit::Assertions
     def assert_cscript_emissions(prog, ems, msg = nil)
-        parser = CScriptParser.new
+        parser = CScript::Parser.new
         parser.scan_string(prog)
-        tree = parser.do_parse
+        tree = parser.do_parse.to_json
 
-        runtime = CScriptRuntime.new
-
-        runtime.execute(tree)
+        program = CScript::Program.new
+        program.load_json(tree)
+        program.run
 
         if ems.class != Array
             ems = [ems]
         end
-        assert_equal(ems.flatten, runtime.emissions, msg)
+        assert_equal(ems.flatten, program.emissions, msg)
     end
-    def assert_cscript_raise(prog, exc)
-        parser = CScriptParser.new
+    def assert_cscript_raise(prog, exp)
+        parser = CScript::Parser.new
         parser.scan_string(prog)
-        tree = parser.do_parse
+        tree = parser.do_parse.to_json
 
-        assert_raise exc do
-            CScriptRuntime.execute(tree)
+        assert_raise exp do
+            prog = CScript::Program.new
+            prog.load_json(tree)
+            prog.run
         end
     end
 end

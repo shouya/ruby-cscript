@@ -1,8 +1,8 @@
 require 'test/unit'
-require_relative '../cscript_lex'
+require_relative '../cscript'
 
 class MyTest < Test::Unit::TestCase
-    include CScriptScanner
+    include CScript::Scanner
 
     def test_scan_mixed
         scan_string('''A Lazy dog jump 6 "ver" /* a fox */;''')
@@ -21,7 +21,8 @@ class MyTest < Test::Unit::TestCase
         assert_equal next_token, ['*', nil]
         assert_equal next_token, ['/', nil]
         assert_equal next_token, [:NAME, 'pa']
-        assert_equal next_token, [:DO, nil]
+        assert_equal next_token, [:NAME, "do"] # Now it still has not a
+                                            # keyword `do' like in C
     end
 
     def test_scan_symbols
@@ -31,7 +32,7 @@ class MyTest < Test::Unit::TestCase
         assert_equal next_token, [';', nil]
         assert_equal next_token, ['/', nil]
         assert_equal next_token, ['=', nil]
-        assert_equal next_token, [:RELATION, '>']
+        assert_equal next_token, [:RELATION, :>]
         assert_equal next_token, ['*', nil]
         assert_equal next_token, ['/', nil]
     end
@@ -43,9 +44,9 @@ class MyTest < Test::Unit::TestCase
         next_token
         assert_equal next_token, [:INCREASE, nil]
         next_token
-        assert_equal next_token, [:EQUALITY, '=']
+        assert_equal next_token, [:EQUALITY, :==]
         next_token
-        assert_equal next_token, [:EQUALITY, '!']
+        assert_equal next_token, [:EQUALITY, :!=]
     end
 
     def test_scan_names

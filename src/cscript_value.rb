@@ -114,7 +114,7 @@ module CScript
         end
 
         def equal_to?(other)
-            return true if self == other
+            return true if self.object_id == other.object_id
             return false if @type != other.type
             return true if @value = other.value
         end

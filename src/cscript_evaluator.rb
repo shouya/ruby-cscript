@@ -152,11 +152,11 @@ module CScript
         end
 
 
-        handle :FUNC_CALL do |name, args|
-            func = @stack.evaluate(name)
+        handle :FUNC_CALL do |name, o_args|
+            func = @stack.find(name['value'])
             func.type_assert :FUNCTION
 
-            args.map! {|x| evaluate x}
+            args = o_args['subnodes'].map {|x| evaluate x}
 
             callstack = CallStack.new(@stack.callstack, func, args)
 
@@ -179,7 +179,7 @@ module CScript
             end
             op1, op2 = op1.value, op2.value
 
-            case operator
+            case operator.intern
             when :==
                 return (op1 == op2)
             when :!=
@@ -198,7 +198,7 @@ module CScript
         handle :AND, [0] do |x, y|
             return false unless x.is_true?
             y = @stack.evaluate(y)
-            return false unless x.is_true?
+            return false unless y.is_true?
 
             return true
         end

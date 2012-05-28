@@ -5,7 +5,7 @@ $CS_VERSION = '1.0'
 require_relative 'cscript_utils'
 
 module CScript
-    $LOAD_PATH << Dir.pwd
+    $LOAD_PATH << File.dirname(__FILE__)
 
     class CScriptError <Exception; end
     class CScriptControl <Exception; end
@@ -26,6 +26,7 @@ module CScript
     autoload :Function, 'cscript_function'
     autoload :SymbolTable, 'cscript_symbol_table'
     autoload :Processor, 'cscript_processor'
+    autoload :CallStack, 'cscript_callstack'
 
 end
 
