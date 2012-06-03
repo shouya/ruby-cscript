@@ -112,6 +112,7 @@ rule
         | loop_ctrl ';' { return val[0] }
         | ';'           { return mkStmt(:EMPTY_STMT) }
         | emit_macro    { return val[0] }
+        | import_macro  { return val[0] }
     ;
 
     stmt_or_blk: stmt           { return val[0] }
@@ -155,6 +156,11 @@ rule
         | expr LOGAND expr      { return mkExpr(:AND, val[0], val[2]) }
         | expr LOGOR expr       { return mkExpr(:OR,  val[0], val[2]) }
     ;
+
+    import_macro: IMPORT_LOC    { return mkMac(:IMPORT_LOCAL, val[0]) }
+        | IMPORT_SYS            { return mkMac(:IMPORT_SYSTEM, val[0]) }
+    ;
+
 
 end
 

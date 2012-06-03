@@ -16,6 +16,11 @@ module CScript
         # include SyntaxTree
         include SyntaxTree.Shortcut {|node| node.place = where? }
 
+        attr_accessor :preprocessor
+        def initialize
+            @preprocessor = Preprocessor.new(self)
+        end
+
         alias_method :do_parse_without_building_tree, :do_parse
         def do_parse
             tree = SyntaxTree::Tree.new(
@@ -34,6 +39,19 @@ module CScript
             return tree
         end
     end
+    class << Parser
+        def parse_file(file)
+            parser = self.new
+            parser.scan_file(file)
+            parser.do_parse.to_json
+        end
+        def parse_string(string)
+            parser = self.new
+            parser.scan_string(string)
+            parser.do_parse.to_json
+        end
+    end
+
 end
 
 

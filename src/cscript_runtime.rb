@@ -5,6 +5,8 @@
 
 require_relative 'cscript'
 
+require 'json'
+
 module CScript
     class RuntimeError < CScriptError; end
     class Runtime
@@ -21,6 +23,9 @@ module CScript
             @processor = Processor.new
         end
 
+        def execute_json(json_code_tree)
+            execute_code(JSON.parse(json_code_tree)['root'])
+        end
         def execute_code(code_tree)
             @root_stack.execute(code_tree)
         end

@@ -17,28 +17,28 @@ module CScript
         def self.rules
             return @rules
         end
-        #
-        # Rules operatable operations
-        #    text: matched text, read-only
-        #    @state, @state= set current state as `new_stat`
-        #    inc_lineno(), @lineno, @lineno=: [increase] current line number
-        #
-        # Rules explanation
-        #    The `rules` is a Array, which including all matching rules.
-        #    Each term should include three item:
-        #      * Matching Pattern
-        #          Which is the what to match. The type should be a regular
-        #          expression.
-        #      * Executable Code Block
-        #          Which is what to be executed when matched. You should return a
-        #          proper Array if it is needed, otherwise, those returning nil
-        #          will be continued matched.
-        #      * Match State
-        #          Rule will only matched when it is in the certain state.
-        #
-        #    The order of rules are important, as the former one will test matching
-        #    first and if it matched successfully, the others will be omitted.
-        #
+    #
+    # Rules operatable operations
+    #    text: matched text, read-only
+    #    @state, @state= set current state as `new_stat`
+    #    inc_lineno(), @lineno, @lineno=: [increase] current line number
+    #
+    # Rules explanation
+    #    The `rules` is a Array, which including all matching rules.
+    #    Each term should include three item:
+    #      * Matching Pattern
+    #          Which is the what to match. The type should be a regular
+    #          expression.
+    #      * Executable Code Block
+    #          Which is what to be executed when matched. You should return a
+    #          proper Array if it is needed, otherwise, those returning nil
+    #          will be continued matched.
+    #      * Match State
+    #          Rule will only matched when it is in the certain state.
+    #
+    #    The order of rules are important, as the former one will test matching
+    #    first and if it matched successfully, the others will be omitted.
+    #
 
         @rules = [
             # Basic Elements
@@ -138,7 +138,7 @@ module CScript
         end
         def scan_file(file_name)
             @file = file_name
-            open file_name do |f|
+            File.open file_name do |f|
                 scan_string(f.read)
             end
         end
@@ -189,21 +189,31 @@ module CScript
 
         def match_and_deal
             return [false, false] if @scanner.eos?
-            state_accorded = @rules.find_all {|x| x[2] == @state}
-            found = state_accorded.find(nil) { |x| @scanner.match? x[0] }
-            #        p "#{@scanner.rest} [#{state}]"
 
-            if !found
-                raise ScannerError,
-                    "Unmatched string in #{@lineno}:#{column}.",
-                caller
+            case (ppresult = @preprocessor.preprocess(@scanner))
+            when :DROP
+                return nil
+            when :EOF
+                return [false, false]
+            when Array
+                return ppresult
+            when :PASS
+                # Do nothing, just pass it
+            else
+                warn 'Unhandled preprocessor result at'
             end
+
+            state_accorded = @rules.find_all {|x| x[2] == @state }
+            found = state_accorded.find(nil) {|x| @scanner.match? x[0] }
+
+            raise ScannerError, 'Unmatched string in %s:%d,%d' % [
+                @file, @lineno, column] unless found
 
             text = @scanner.scan(found[0])
 
             ret = eval(found[1], binding)
 
-            return ret if ret.class == Array
+            return ret if ret.is_a? Array
             nil
         end
 
@@ -211,6 +221,7 @@ module CScript
             if @scanner.eos?
                 return [false, false]
             end
+
             ret = nil
             loop do
                 ret = match_and_deal

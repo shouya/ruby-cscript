@@ -27,16 +27,13 @@ module CScript
             def type_is? (*test_type)
                 return test_type.include? @type
             end
-            def nodetype
-                classname = self.class.to_s.gsub /.*::/, ''
-                strout = classname[0].downcase
-                classname[1..-1].each_char do |c|
-                    strout << (c==c.downcase ? c : "_#{c.downcase}")
-                end
-                return strout.intern
-            end
+
             def as_json
-                json = { :nodetype => nodetype, :type => @type }
+                nodetype = self.class.to_s.gsub!(/.*::/, '')
+                nodetype.gsub!(/^([A-Z])/) { "#{$1.downcase}" }
+                nodetype.gsub!(/([A-Z]+)/) { "_#{$1.downcase}" }
+
+                json = { :nodetype => nodetype.intern, :type => @type }
                 if $CS_DEBUG
                     json.merge({ :place => @place })
                 end

@@ -31,6 +31,12 @@ module CScript
                 c.evaluate(t['operands'][0]).value
         end
 
+        handle :IMPORT_LOCAL do |c, t|
+            json = Parser.parse_file(t['operands'][0])
+            c.runtime.execute_json(json)
+           # p t['operands']
+        end
+
     end
 end
 
