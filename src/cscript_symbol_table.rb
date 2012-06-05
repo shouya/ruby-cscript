@@ -40,6 +40,14 @@ module CScript
             error_raise "Variable #{name} not found!"
         end
 
+        def undef_local(name)
+            return @symbol_table.delete(name)
+        end
+        def undef(name)
+            tbl = nil
+            return tbl.undef_local(name) if tbl = find_table_by_name(name)
+            return nil
+        end
 
         def trace_up
             return nil if @stack.nil?
@@ -60,7 +68,8 @@ module CScript
             return nil if upper.nil?
         end
 
-        public :find, :find_local, :store, :store_local, :store_global
+        public :find, :find_local, :store, :store_local, :store_global,
+            :undef, :undef_local
         protected :trace_up, :trace_global, :find_table_by_name
     end
 end

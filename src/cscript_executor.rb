@@ -140,6 +140,24 @@ module CScript
             end
         end
 
+        handle :GLOBAL do |tree|
+            decl_list = tree['operands'][0]['subnodes']
+            vars, vars_with_asgn = decl_list.partition do |node|
+                node['type'] == 'DECL_ITEM'
+            end
+
+            vars_with_asgn.each do |item|
+                name = item['operands'][0]
+                val = @stack.evaluate(item['operands'][1])
+                @stack.store_global(name, val)
+            end
+            vars.each do |item|
+                name = item['operands'][0]
+                old_val = @stack.symbol_table.undef(name)
+                @stack.store_global(name, old_val || Value.null)
+            end
+        end
+
         public :execute
     end
 end

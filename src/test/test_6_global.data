@@ -1,0 +1,21 @@
+/* to be imported */
+/*
+Existing global variables:
+  - a -> 1
+  - b -> 3  # (a + 2)
+  - c -> 'hello, world' # (local(d) + ', world'))
+
+ */
+
+
+a = a + 10;  /* assigning global variables*/
+
+def foo() {
+    b = b + 5;
+}
+foo();          /* global variable is accessed in functions */
+
+c = c * 2;      /* another assignment */
+
+d = 100;        /* define a local one */
+

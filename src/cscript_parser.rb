@@ -28,6 +28,7 @@ module CScript
                     :language => 'cscript',
                     :version => $CS_VERSION,
                     :filename => file,
+                    :directory => Dir.getwd,
                     :parser => {
                         :name => 'sci', # Shou ya's Cscript Implement
                         :version => $CS_PARSER_VERSION,

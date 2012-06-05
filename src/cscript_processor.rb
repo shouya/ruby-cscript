@@ -32,6 +32,14 @@ module CScript
         end
 
         handle :IMPORT_LOCAL do |c, t|
+            source_dir = c.runtime.program.meta_info['directory']
+            filename = c.runtime.program.meta_info['filename']
+            begin
+                Dir.chdir source_dir
+            rescue Errno::ENOENT
+            end
+            Dir.chdir File.dirname(filename)
+
             json = Parser.parse_file(t['operands'][0])
             c.runtime.execute_json(json)
            # p t['operands']

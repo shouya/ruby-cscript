@@ -54,23 +54,35 @@ module CScript
             return behavior || :PASS
         end
 
-        handle %r{\#import\s\"(.*)\"} do |m|# Importing(local-path)
+        handle %r{\#\s*import\s*\"(.*)\"} do |m|# Importing(local-path)
             return [:IMPORT_LOC, m[1]]
         end
-        handle %r{\#import\s\<(.*)\>} do |m|# Importing(system-path)
+        handle %r{\#\s*import\s*\<(.*)\>} do |m|# Importing(system-path)
             return [:IMPORT_SYS, m[1]] # TODO: not handled in executor
         end
         handle %r{\#\s+(\d+)\s+\"(.*)\".*} do |m| # File/line mark
             @parser.instance_eval do
                 @lineno = m[1].to_i - 1
+                @colno = 0 # TODO: a valid value
             end
             # * $2 # The filename, ('<stdin>', '<command-line>' expected)
                    # The second one could be omitted
             return :DROP
         end
+        handle %r{\#\s*file\s*auto} do |m|
+            @parser.instance_eval do
+                @file = $0
+            end
+        end
+        handle %r{\#\s*file\s*\"(.*)\"} do |m|
+            @parser.instance_eval do
+                @file = m[1]
+            end
+        end
         handle %r{\#.*} do |*| # Regard as a comment
             return :DROP
         end
+
     end
 end
 

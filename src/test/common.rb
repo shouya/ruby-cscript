@@ -1,7 +1,9 @@
 # This file is just used for included by other test programs.
 # It only includes some convenient operations for testing
 
-require 'test/unit'
+$mode = :syntax if ARGF.argv[0] == 'syntax'
+
+require 'test/unit' unless $mode
 
 $CS_DEBUG = 1
 require_relative '../cscript'
@@ -13,6 +15,9 @@ begin
 rescue LoadError
     require 'pp'
 end
+
+
+module Test; module Unit; module Assertions; end; end; end
 
 module Test::Unit::Assertions
     def assert_cscript_emissions(prog, ems, msg = nil)
@@ -48,6 +53,7 @@ def inc
     return @_inc = @_inc.succ
 end
 
+class Test::Unit::TestCase; end
 class MyTest < Test::Unit::TestCase
 end
 
@@ -67,17 +73,20 @@ def simple_test_raise(exc, name = inc)
     end
 end
 
-def very_simple_test(ems, name = inc)
+def more_simple_test(ems, name = inc)
     simple_test(ems, name) do
         eval('DATA.read')
     end
 end
 
 if ARGF.argv[0] == 'syntax'
-    def simple_test(exc, name = inc)
+    Object.send :remove_const, :MyTest
+    Object.const_set(:MyTest, Class.new(BasicObject))
+
+    def simple_test(exc = [], name = inc)
         parser = CScript::Parser.new
         parser.scan_string(yield)
-        json = parser.do_parse.as_json
+        json = JSON.parse(parser.do_parse.to_json)
         begin
             pp json, :indent => 2
         rescue ArgumentError

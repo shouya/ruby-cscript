@@ -89,6 +89,7 @@ module CScript
  #           [/\bextern\b/,        """ [:EXTERN, nil] """,           nil ],
             [/\btrue\b/,          """ [:BOOL, true] """,            nil ],
             [/\bfalse\b/,         """ [:BOOL, false] """,           nil ],
+            [/\bglobal\b/,        """ [:GLOBAL, nil] """,           nil ],
 
             [/\bEMIT\b/,          """ [:EMIT, nil] """,             nil ],
 

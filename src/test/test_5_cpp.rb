@@ -3,7 +3,7 @@
 
 require_relative 'common'
 
-very_simple_test [1]
+more_simple_test [1]
 
 
 __END__

@@ -122,6 +122,8 @@ module CScript
         end
         class Statement < Control
         end
+        class Mark < Control
+        end
         class Container < Node
             include Enumerable
 
@@ -166,6 +168,7 @@ module CScript
                     :Expr => Expression,
                     :Stmt => Statement,
                     :Mac => Macro,
+                    :Mark => Mark,
                     #                   :Cont => Container,
                     :SList => StatementList,
                     :EList => ExpressionList,

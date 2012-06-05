@@ -113,6 +113,7 @@ rule
         | ';'           { return mkStmt(:EMPTY_STMT) }
         | emit_macro    { return val[0] }
         | import_macro  { return val[0] }
+        | global_var_decl ';' { return val[0] }
     ;
 
     stmt_or_blk: stmt           { return val[0] }
@@ -161,6 +162,14 @@ rule
         | IMPORT_SYS            { return mkMac(:IMPORT_SYSTEM, val[0]) }
     ;
 
+    var_decl_lst: var_decl_item { return mkEList(:DECL_LIST) << val[0] }
+        | var_decl_lst ',' var_decl_item { return val[0] << val[2] }
+    ;
+    var_decl_item: NAME { return mkMark(:DECL_ITEM, val[0]) }
+        | NAME '=' expr { return mkMark(:DECL_ITEM_ASGN, val[0], val[2]) }
+    ;
+    global_var_decl: GLOBAL var_decl_lst { return mkStmt(:GLOBAL, val[1]) }
+    ;
 
 end
 
