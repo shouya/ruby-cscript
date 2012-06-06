@@ -5,54 +5,77 @@
 
 # run `racc -E -v -ocscript_yacc.rb cscript_yacc.y' to generate this file
 
-require_relative 'cscript_yacc'
 require_relative 'cscript'
 
 $CS_PARSER_VERSION = '1.0'
 
 module CScript
-    Parser.class_eval do
-        include Scanner
-        # include SyntaxTree
-        include SyntaxTree.Shortcut {|node| node.place = where? }
+    class Parser
+        attr_accessor :scanner, :yacc, :preprocessor
+        attr_accessor :options # temporarily useless
 
-        attr_accessor :preprocessor
-        def initialize
+        def initialize(options = {})
             @preprocessor = Preprocessor.new(self)
+            scanner = @scanner = Scanner.new(self)
+            @yacc = Yacc.new
+
+            @yacc.define_singleton_method :next_token do
+                scanner.next_token
+            end
+            @yacc.singleton_class.class_eval do
+                include SyntaxTree.Shortcut do |node|
+                    node.place = scanner.location
+                end
+            end
+
+            @options = options
         end
 
-        alias_method :do_parse_without_building_tree, :do_parse
-        def do_parse
+        def preprocess
+            return @preprocessor.preprocess
+        end
+
+        def scan_file(*args)
+            return @scanner.scan_file(*args)
+        end
+        def scan_string(*args)
+            return @scanner.scan_string(*args)
+        end
+        def scan_stdin(*args)
+            return @scanner.scan_stdin(*args)
+        end
+
+        def do_parse(*args)
             tree = SyntaxTree::Tree.new(
-                do_parse_without_building_tree, {
-                    :language => 'cscript',
-                    :version => $CS_VERSION,
-                    :filename => file,
-                    :directory => Dir.getwd,
-                    :parser => {
-                        :name => 'sci', # Shou ya's Cscript Implement
-                        :version => $CS_PARSER_VERSION,
-                        :options => []
-                    },
-                    :optimizer => nil,
-                    :parse_date => Time.now()
-                })
-            return tree
+                @yacc.do_parse, {
+                :language => 'cscript',
+                :version => $CS_VERSION,
+                :filename => @scanner.instance_variable_get(:@filename),
+                :directory => Dir.getwd,
+                :parser => {
+                    :name => 'SCI', # Shou ya's Cscript Implement
+                    :version => $CS_PARSER_VERSION,
+                    :options => @options
+                },
+                :optimizer => nil,
+                :parse_date => Time.now()
+            })
         end
-    end
-    class << Parser
-        def parse_file(file)
-            parser = self.new
-            parser.scan_file(file)
-            parser.do_parse.to_json
-        end
-        def parse_string(string)
-            parser = self.new
-            parser.scan_string(string)
-            parser.do_parse.to_json
-        end
-    end
 
+        class << self       # Convenient methods
+            def parse_file(file)
+                parser = self.new
+                parser.scan_file(file)
+                parser.do_parse.to_json
+            end
+            def parse_string(string)
+                parser = self.new
+                parser.scan_string(string)
+                parser.do_parse.to_json
+            end
+        end
+
+    end
 end
 
 

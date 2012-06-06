@@ -13,6 +13,7 @@ module CScript
     # Parser Part
     autoload :Preprocessor, 'cscript_cpp'
     autoload :SyntaxTree, 'cscript_syntax_tree'
+    autoload :Yacc, 'cscript_yacc'
     autoload :Parser, 'cscript_parser'
     autoload :Scanner, 'cscript_scanner'
 

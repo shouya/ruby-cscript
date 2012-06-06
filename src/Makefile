@@ -14,6 +14,8 @@ exec: tool/test_exec.rb
 lexer: tool/test_lexer.rb
 	ruby $<
 
+test:
+	test/test_all.sh
 
 .PHONY : clean
 clean:

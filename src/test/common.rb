@@ -2,6 +2,8 @@
 # It only includes some convenient operations for testing
 
 $mode = :syntax if ARGF.argv[0] == 'syntax'
+$mode = :lexer if ARGF.argv[0] == 'lexer'
+$mode = :cat if ARGF.argv[0] == 'cat'
 
 require 'test/unit' unless $mode
 
@@ -92,6 +94,24 @@ if ARGF.argv[0] == 'syntax'
         rescue ArgumentError
             pp json
         end
+    end
+elsif ARGF.argv[0] == 'lexer'
+    Object.send :remove_const, :MyTest
+    Object.const_set(:MyTest, Class.new(BasicObject))
+
+    def simple_test(exc = [], name = inc)
+        parser = CScript::Parser.new
+        parser.scan_string(yield)
+
+        until (token = parser.scanner.next_token) == [false, false] do
+            puts token.inspect
+        end
+        puts '-' * 70
+    end
+elsif ARGF.argv[0] == 'cat'
+    def simple_test(*args)
+        @i ||= nil
+        puts File.read($0) and @i = 1 unless @i
     end
 end
 

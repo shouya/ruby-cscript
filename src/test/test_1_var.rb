@@ -22,7 +22,7 @@ EMIT a + b;
 HERE
 }
 
-simple_test_raise(RuntimeError) {
+simple_test_raise(CScript::RuntimeError) {
     <<HERE
 if (c = 2) {
     1;

@@ -5,10 +5,7 @@
 # vim: filetype=ruby
 #
 
-# require 'cscript_lex'
-# include 'CScriptLexer'
-
-class CScript::Parser
+class CScript::Yacc
 
 prechigh
     right       UMINUS UPLUS '!'

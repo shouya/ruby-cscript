@@ -37,5 +37,34 @@ module CScript
         end
 
 
+        Kernel.send :define_method, :proc_to_lambda do |&blk|
+            (tmp = Object.new).define_singleton_method(:_tmp, &blk)
+            Proc.new &tmp.method(:_tmp).to_proc
+        end
+
+        Kernel.send :define_method, :generate_method do |&blk|
+            BasicObject.class_eval do
+                define_method :tmp_method, &blk
+                m = instance_method :tmp_method
+                undef_method :tmp_method
+                m
+            end
+        end
+
+        Kernel.send :define_method, :binding_call do |who, bind, *args, &blk|
+            (cls = who.dup).singleton_class.class_eval do
+                define_method :method_missing do |m, *args|
+                    begin
+                        return bind.eval("%s %s" % [m.to_s,
+                                         args.map(&:inspect).join])
+                    rescue NameError
+                        super
+                    end
+                end
+            end
+            cls.instance_exec(*args, &blk)
+        end
+
+
     end
 end

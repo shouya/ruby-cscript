@@ -25,15 +25,17 @@ module CScript
                 end
                 handle_types.map!(&:to_s)
 
+=begin
                 method_name = 'tmpm_' + handle_types.join('_').downcase
                 method_name = method_name.intern
 
                 Object.send(:define_method, method_name, &block)
                 unbinded = Object.send(:instance_method, method_name)
                 Object.send(:remove_method, method_name)
+=end
 
                 @table.store(handle_types, {
-                    :block => unbinded,
+                    :block => block,
                     :evaluated => evaled,
                     :options => options})
             end
@@ -81,7 +83,8 @@ module CScript
                 end
             end
 
-            retval = handler[:block].bind(self).call(*args)
+#            retval = handler[:block].bind(self).call(*args)
+            retval = self.instance_exec(*args, &handler[:block])
 
             retval = Value.new(retval) unless Value === retval
 
@@ -103,7 +106,7 @@ module CScript
         handle :PLUS, [0,1] do |op1, op2|
             if (op1.type_is? :INTEGER and op2.type_is? :INTEGER) or
                (op1.type_is? :STRING and op2.type_is? :STRING) then
-                return op1 + op2
+                next op1 + op2
             else
                 eval_error("Type Error")
             end
@@ -112,13 +115,13 @@ module CScript
         handle :MINUS, [0, 1] do |op1, op2|
             op1.type_assert :INTEGER
             op2.type_assert :INTEGER
-            return op1 - op2
+            next op1 - op2
         end
 
         handle :MULTIPLY, [0, 1] do |op1, op2|
             if (op1.type_is? :INTEGER and op2.type_is? :INTEGER) or
                 (op1.type_is? :STRING and op2.type_is? :INTEGER) then
-                return op1 * op2
+                next op1 * op2
             else
                 eval_error("Type Error")
             end
@@ -132,7 +135,7 @@ module CScript
 
         handle :UMINUS, [0] do |op|
             op.type_assert :INTEGER
-            return op.send(:-@)  # :-@ 囧
+            next op.send(:-@)  # :-@ 囧
         end
         handle :UPLUS, [0] do |op|
             op
@@ -168,7 +171,7 @@ module CScript
 
             callstack.execute
 
-            return callstack.return_value
+            next callstack.return_value
         end
 
         handle :COMPARISON, [0, 2] do |op1, operator, op2|
@@ -181,39 +184,39 @@ module CScript
 
             case operator.intern
             when :==
-                return (op1 == op2)
+                next (op1 == op2)
             when :!=
-                return (op1 != op2)
+                next (op1 != op2)
             when :<
-                return (op1 < op2)
+                next (op1 < op2)
             when :<=
-                return (op1 <= op2)
+                next (op1 <= op2)
             when :>
-                return (op1 > op2)
+                next (op1 > op2)
             when :>=
-                return (op1 >= op2)
+                next (op1 >= op2)
             end
         end
 
         handle :AND, [0] do |x, y|
-            return false unless x.is_true?
+            next false unless x.is_true?
             y = @stack.evaluate(y)
-            return false unless y.is_true?
+            next false unless y.is_true?
 
-            return true
+            next true
         end
 
         handle :OR, [0] do |x, y|
-            return x if x.is_true?
+            next x if x.is_true?
 
             y = evaluate(y)
-            return y if y.is_true?
+            next y if y.is_true?
 
-            return false
+            next false
         end
 
         handle :NOT, [0] do |v|
-            return v.is_false?
+            next v.is_false?
         end
 
     end

@@ -37,12 +37,13 @@ module CScript
             end
         end
 
-        def preprocess(scanner)
-            dispatch(scanner)
+        def preprocess()
+            dispatch()
         end
 
-        def dispatch(scanner)
+        def dispatch()
             behavior = nil
+            scanner = @parser.scanner.instance_variable_get :@scanner
             self.class.handler_table.each do |(regexp, method)|
                 if scanner.match?(regexp)
                     scanned = scanner.scan(regexp)
@@ -61,26 +62,26 @@ module CScript
             return [:IMPORT_SYS, m[1]] # TODO: not handled in executor
         end
         handle %r{\#\s+(\d+)\s+\"(.*)\".*} do |m| # File/line mark
-            @parser.instance_eval do
+            @parser.scanner.instance_eval do
                 @lineno = m[1].to_i - 1
                 @colno = 0 # TODO: a valid value
             end
             # * $2 # The filename, ('<stdin>', '<command-line>' expected)
                    # The second one could be omitted
-            return :DROP
+            return :PASS
         end
         handle %r{\#\s*file\s*auto} do |m|
-            @parser.instance_eval do
-                @file = $0
-            end
+            @parser.scanner.instance_eval do
+                @filename = $0
+            end; nil
         end
         handle %r{\#\s*file\s*\"(.*)\"} do |m|
-            @parser.instance_eval do
-                @file = m[1]
-            end
+            @parser.scanner.instance_eval do
+                @filename = m[1]
+            end; nil
         end
         handle %r{\#.*} do |*| # Regard as a comment
-            return :DROP
+            return :PASS
         end
 
     end
