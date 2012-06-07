@@ -10,7 +10,7 @@ class CScript::Yacc
 prechigh
     right       UMINUS UPLUS '!'
 
-    left        '*' '/'
+    left        '*' '/' '%'
     left        '+' '-'
 
     left        EQUALITY
@@ -62,6 +62,7 @@ rule
         | expr '-' expr         { return mkExpr(:MINUS, val[0], val[2]) }
         | expr '*' expr         { return mkExpr(:MULTIPLY, val[0], val[2]) }
         | expr '/' expr         { return mkExpr(:DIVIDE, val[0], val[2]) }
+        | expr '%' expr         { return mkExpr(:MOD, val[0], val[2]) }
     ;
 
 

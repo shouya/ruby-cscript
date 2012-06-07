@@ -26,8 +26,8 @@ module CScript
         end
         def execute_code(code_tree)
             root_stack = RunStack.new(nil, :root)
-            root_stack.instance_exec(self) { |rt| @runtime = rt }
             @current_stack = root_stack
+            root_stack.instance_variable_set :@runtime, self
             root_stack.execute(code_tree)
         end
         def process(callerx, tree)

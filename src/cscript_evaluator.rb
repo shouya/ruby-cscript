@@ -133,6 +133,12 @@ module CScript
             op1 / op2
         end
 
+        handle :MOD, [0, 1] do |op1, op2|
+            op1.type_assert :INTEGER
+            op2.type_assert :INTEGER
+            op1 % op2
+        end
+
         handle :UMINUS, [0] do |op|
             op.type_assert :INTEGER
             next op.send(:-@)  # :-@ 囧
@@ -161,7 +167,7 @@ module CScript
 
             args = o_args['subnodes'].map {|x| evaluate x}
 
-            callstack = CallStack.new(@stack.callstack, func, args)
+            callstack = CallStack.new(@stack.callstack, @stack, func, args)
 
             if @stack.type == :root
                 callstack.instance_exec(@stack.runtime) do |rt|

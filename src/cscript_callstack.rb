@@ -14,6 +14,7 @@ module CScript
         attr_reader :runtime # Runtime of the program
         attr_reader :function # Function of the stack, `Function` object
         attr_reader :arguments # Arguments to call the function, Array of Value
+        attr_reader :parent_runstack
 
         # Dynamic Changed
         attr_accessor :current_runstack
@@ -30,9 +31,10 @@ module CScript
         attr_accessor :return_val
 =end
 
-        def initialize(x_caller, function, arguments = nil)
+        def initialize(x_caller, runstack, function, arguments = nil)
             @caller = x_caller
-            @runtime = x_caller ? x_caller.runtime : nil
+            @parent_runstack = runstack
+            @runtime = runstack.runtime
             @function = function
             @arguments = arguments || []
 
@@ -41,10 +43,8 @@ module CScript
 
         def execute
             @runstack = RunStack.new(nil, :func_call)
-            @runstack.instance_exec(self) do |who|
-                @callstack = who
-                @runtime = who.runtime
-            end
+            @runstack.instance_variable_set :@callstack, self
+            @runstack.instance_variable_set :@runtime, @runtime
 
             @current_runstack = @runstack
 
