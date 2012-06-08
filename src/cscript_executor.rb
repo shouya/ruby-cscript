@@ -107,7 +107,7 @@ module CScript
             body = tree['operands'][2]
 
             func_obj = Value.new(Function.new(body, parameters, func_name))
-            @stack.store_static(func_name, func_obj)
+            @stack.symbol_table.store_static(func_name, func_obj)
 
             @stack.last_value = Value.null
         end

@@ -1,0 +1,7 @@
+
+def foo() {
+    2;
+}
+
+EMIT foo();
+
