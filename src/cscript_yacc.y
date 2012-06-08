@@ -112,6 +112,7 @@ rule
         | emit_macro    { return val[0] }
         | import_macro  { return val[0] }
         | global_var_decl ';' { return val[0] }
+        | static_var_decl ';' { return val[0] }
     ;
 
     stmt_or_blk: stmt           { return val[0] }
@@ -167,6 +168,9 @@ rule
         | NAME '=' expr { return mkMark(:DECL_ITEM_ASGN, val[0], val[2]) }
     ;
     global_var_decl: GLOBAL var_decl_lst { return mkStmt(:GLOBAL, val[1]) }
+    ;
+
+    static_var_decl: STATIC var_decl_lst { return mkStmt(:STATIC, val[1]) }
     ;
 
 end

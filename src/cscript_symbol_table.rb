@@ -25,6 +25,9 @@ module CScript
             place = find_table_by_name(name) || self
             place.store_local(name, value)
         end
+        def store_static(name, value)
+            trace_static.dup {|x| p x.stack.type}.store_local(name, value)
+        end
 
         def find_local(name)
             return nil unless @symbol_table.has_key? name
@@ -50,14 +53,21 @@ module CScript
         end
 
         def trace_up
-            return nil if @stack.nil?
+            return nil if @stack.nil? # runtime symbol_table
             return @stack.parent.symbol_table if @stack.parent
+            return @stack.runtime.static_scope.symbol_table if \
+                @stack.type != :static
             return @stack.runtime.symbol_table
+            warn 'How could...'
         end
 
         def trace_global
             return @stack.runtime.symbol_table if @stack
-            return self
+            return self # this is just the global scope
+        end
+        def trace_static
+            return self if @stack.type == :static
+            return @stack.runtime.static_scope.symbol_table
         end
 
         def find_table_by_name(name)

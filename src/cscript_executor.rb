@@ -107,7 +107,7 @@ module CScript
             body = tree['operands'][2]
 
             func_obj = Value.new(Function.new(body, parameters, func_name))
-            @stack.store_global(func_name, func_obj)
+            @stack.store_static(func_name, func_obj)
 
             @stack.last_value = Value.null
         end
@@ -148,16 +148,39 @@ module CScript
 
             vars_with_asgn.each do |item|
                 name = item['operands'][0]
+                @stack.symbol_table.undef(name)
+
                 val = @stack.evaluate(item['operands'][1])
-                @stack.store_global(name, val)
+                @stack.symbol_table.store_global(name, val)
             end
             vars.each do |item|
                 name = item['operands'][0]
                 old_val = @stack.symbol_table.undef(name)
-                @stack.store_global(name, old_val || Value.null)
+                @stack.symbol_table.store_global(
+                    name, old_val || Value.null)
             end
         end
 
+        handle :STATIC do |tree|
+            decl_list = tree['operands'][0]['subnodes']
+            vars, vars_with_asgn = decl_list.partition do |node|
+                node['type'] == 'DECL_ITEM'
+            end
+
+            vars_with_asgn.each do |item|
+                name = item['operands'][0]
+                @stack.symbol_table.undef(name)
+
+                val = @stack.evaluate(item['operands'][1])
+                @stack.symbol_table.store_static(name, val)
+            end
+            vars.each do |item|
+                name = item['operands'][0]
+                old_val = @stack.symbol_table.undef(name)
+                @stack.symbol_table.store_static(
+                    name, old_val || Value.null)
+            end
+        end
         public :execute
     end
 end

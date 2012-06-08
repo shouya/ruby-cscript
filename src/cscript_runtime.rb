@@ -12,23 +12,34 @@ module CScript
     class Runtime
         attr_reader :program
         attr_reader :current_stack # The root runtstack
+        attr_reader :static_scope
         attr_reader :symbol_table
         attr_reader :processor # Macro processor
+
+        attr :static_stack
 
         def initialize(program)
             @program = program
             @symbol_table = SymbolTable.new(nil)
             @processor = Processor.new
+            @static_stack = []
         end
 
         def execute_json(json_code_tree)
             execute_code(JSON.parse(json_code_tree)['root'])
         end
         def execute_code(code_tree)
-            root_stack = RunStack.new(nil, :root)
-            @current_stack = root_stack
-            root_stack.instance_variable_set :@runtime, self
-            root_stack.execute(code_tree)
+            @static_stack.push [@static_scope, @current_stack]
+
+            @static_scope = RunStack.new(nil, :static)
+            @static_scope.instance_variable_set :@runtime, self
+
+            @current_stack = RunStack.new(nil, :root)
+            @current_stack.instance_variable_set :@runtime, self
+
+            @current_stack.execute(code_tree)
+
+            @static_scope, @current_stack = @static_stack.pop
         end
         def process(callerx, tree)
             @processor.process(callerx, tree)
