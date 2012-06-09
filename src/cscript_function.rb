@@ -31,14 +31,24 @@ module CScript
             return true if args.length == @parameters.length
             return false
         end
-        def make_parameters_hash(args)
-            if ! validate_arguments(args) then
+        def make_parameter_hash(args)
+            if not validate_arguments(args) then
                 raise ArgumentError,
                     'Argument(s) not valid',
                     $run_ptr.stack
             end
 
             return Hash[ *@parameters.zip(args).flatten ]
+        end
+
+        def call(runstack, args)
+            callstack = CallStack.new(
+                runstack.callstack, runstack, self, args)
+
+            callstack.instance_variable_set :@runtime, runstack.runtime \
+                unless runstack.type == :root
+
+            return callstack.execute
         end
     end
 

@@ -29,6 +29,13 @@ module CScript
             trace_static.dup {|x| p x.stack.type}.store_local(name, value)
         end
 
+        def set_variables(hash)
+            @symbol_table.merge!(hash)
+        end
+        def variables
+            @symbol_table
+        end
+
         def find_local(name)
             return nil unless @symbol_table.has_key? name
             return @symbol_table.fetch(name)

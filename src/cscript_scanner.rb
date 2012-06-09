@@ -52,6 +52,9 @@ module CScript
         rule(/\n/, :COMM)           { :PASS }
         rule(/./, :COMM)            { :PASS }
 
+        # Right Arrow
+        symbol_rule('->')           { [:RARROW] }
+
         # Comparisons
         symbol_rule('<=')           { [:RELATION, :<=] }
         symbol_rule('<')            { [:RELATION, :<] }

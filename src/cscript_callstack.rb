@@ -6,7 +6,12 @@
 require_relative 'cscript_runstack'
 
 module CScript
-    class ReturnSignal < CScriptControl; end
+    class ReturnSignal < CScriptControl
+        attr_accessor :return_value
+        def initialize(return_value)
+            @return_value = return_value
+        end
+    end
 
     class CallStack
         # Meta Info
@@ -21,7 +26,7 @@ module CScript
 
         # Dynamic Generated
         attr_reader :runstack
-        attr_reader :return_value # Return value
+        #attr_reader :return_value # Return value
 
 
 =begin Deprecated
@@ -48,24 +53,20 @@ module CScript
 
             @current_runstack = @runstack
 
-            @function.make_parameters_hash(@arguments).each do |p, a|
-                @runstack.store_local(p, a)
-            end
+            param_hash = @function.make_parameter_hash(@arguments)
+            @runstack.set_variables(param_hash)
 
             begin
                 @runstack.execute(@function.body)
-            rescue ReturnSignal
-                return @return_value
+            rescue ReturnSignal => ret
+                return ret.return_value || Value.null
             else
-                @return_value = @current_runstack.last_value
+                return @current_runstack.last_value || Value.null
             end
-
-            @return_value
         end
 
         def return(return_value = nil)
-            @return_value = return_value
-            raise ReturnSignal
+            raise ReturnSignal.new(return_value)
         end
     end
 end

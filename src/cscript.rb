@@ -29,6 +29,7 @@ module CScript
     autoload :SymbolTable, 'cscript_symbol_table'
     autoload :Processor, 'cscript_processor'
     autoload :CallStack, 'cscript_callstack'
+    autoload :Lambda, 'cscript_lambda'
 
 end
 

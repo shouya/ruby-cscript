@@ -33,6 +33,8 @@ module CScript
                     return :BOOL
                 when Function
                     return :FUNCTION
+                when Lambda
+                    return :LAMBDA
                 else
                     raise TypeError,
                         %{Unknown type of "#{value}"}
@@ -50,16 +52,10 @@ module CScript
         end
 
         def type_assert(*arg, stack)
-            if arg.empty?
-                arg << stack
-                stack = nil
-            end
+            arg << stack and stack = nil if arg.empty?
             if !type_is? *arg
-                raise TypeError,
-                    "Not expected type",
-                    stack.stack if stack
-                raise TypeError,
-                    "Not expected type"
+                raise TypeError, "Not expected type, expect #{
+                    arg.map(&:to_s).join(', ')} but get #{@type}"
             end
             true
         end
@@ -87,6 +83,9 @@ module CScript
                 return @value.to_s
             end
         end
+        def inspect
+            return "#{@type}: #{@value.inspect}"
+        end
 
         def is_false?
             case @type
@@ -104,9 +103,16 @@ module CScript
             return !is_false?
         end
 
+        def callable?
+            return (is_function? || is_lambda?)
+        end
         def is_function?
             return @type == :FUNCTION
         end
+        def is_lambda?
+            return @type == :LAMBDA
+        end
+
 
         def method_missing(m, *args, &block)
             args.map! {|x| Value === x ? x.value : x }

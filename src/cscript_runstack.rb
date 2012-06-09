@@ -37,8 +37,8 @@ module CScript
             @executor = Executor.new(self)
             @evaluator = Evaluator.new(self)
             @symbol_table = SymbolTable.new(self)
-            @callstack = parent ? parent.callstack : nil
 
+            @callstack = parent ? parent.callstack : nil
             @callstack.current_runstack = self if @callstack
 
             @run_ptr = @substack = @last_value = nil
@@ -52,6 +52,8 @@ module CScript
                 return @executor.execute(*args)
             when 'macro'
                 return @runtime.process(self, *args)
+            else
+                raise 'wtf?!'
             end
         end
 
@@ -66,11 +68,60 @@ module CScript
         def store_local(*args)
             @symbol_table.store_local(*args)
         end
-        def store_global(*args)
-            @symbol_table.store_global(*args)
-        end
         def find(*args)
             @symbol_table.find(*args)
+        end
+
+        def is_lambda_call?
+            ptr = self
+            while ptr.type != :lambda
+                ptr = ptr.parent and next if ptr.parent
+                return false
+            end
+            return true
+        end
+        def is_func_call?
+            return false if @callstack.nil?
+            ptr = self
+            while ptr.type != :func_call
+                ptr = ptr.parent and next if ptr.parent
+                return false
+            end
+            return true
+        end
+        def is_inside_loop?
+            ptr = self
+            until [:while, :until].include?(ptr.type)
+                ptr = ptr.parent and next if ptr.parent
+                return false
+            end
+            return true
+        end
+
+        def return(value = nil)
+            case
+            when is_func_call?
+                @callstack.return(value)
+            when is_lambda_call?
+                Lambda.return(value)
+            else
+                error_raise 'Cannot return without inside calling.'
+            end
+        end
+
+        def set_variables(hash)
+            @symbol_table.set_variables(hash)
+        end
+
+        def make_binding
+            bind = @symbol_table.variables.dup
+            ptr = self
+            until ptr.parent.nil?
+                ptr.symbol_table.variables.each do |k, v|
+                    bind.store(k, v)
+                end
+            end
+            bind
         end
 
 =begin Deprecated

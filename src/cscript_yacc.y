@@ -56,6 +56,7 @@ rule
         | func_call     { return val[0] }
         | comp_expr     { return val[0] }
         | logic_expr    { return val[0] }
+        | lambda_expr   { return val[0] }
     ;
 
     binary_op: expr '+' expr    { return mkExpr(:PLUS, val[0], val[2]) }
@@ -115,8 +116,11 @@ rule
         | static_var_decl ';' { return val[0] }
     ;
 
+    block: '{' stmt_lst '}'     { return val[1] }
+    ;
+
     stmt_or_blk: stmt           { return val[0] }
-        | '{' stmt_lst '}'      { return val[1] }
+        | block                 { return val[0] }
 
     x_if: if_part     =LOWER_THAN_ELSE  { return mkStmt(:IF1, val[0]) }
         | if_part else_part   { return mkStmt(:IF2, val[0], val[1]) }
@@ -171,6 +175,15 @@ rule
     ;
 
     static_var_decl: STATIC var_decl_lst { return mkStmt(:STATIC, val[1]) }
+    ;
+
+    lambda_block: block                  { return mkMark(:BLOCK, val[0]) }
+        | '{' '|' name_list '|' stmt_lst '}' {
+            return mkMark(:LBD_BLOCK, val[2], val[4])
+        }
+    ;
+
+    lambda_expr: RARROW lambda_block   { return mkExpr(:LAMBDA, val[1]) }
     ;
 
 end

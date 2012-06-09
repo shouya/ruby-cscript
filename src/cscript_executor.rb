@@ -114,12 +114,9 @@ module CScript
 
         handle :RETURN do |tree|
             ret_vals = tree['operands']
+            ret_vals = ret_vals.empty? ? nil : @stack.evaluate(ret_vals[0])
 
-            if ret_vals.empty?
-                @stack.callstack.return
-            else
-                @stack.callstack.return(@stack.evaluate(ret_vals.first))
-            end
+            @stack.return(ret_vals)
         end
 
         handle :REDO do

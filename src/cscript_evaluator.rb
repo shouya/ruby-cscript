@@ -163,21 +163,19 @@ module CScript
 
         handle :FUNC_CALL do |name, o_args|
             func = @stack.find(name['value'])
-            func.type_assert :FUNCTION
+            error_raise 'Object is not callable.' unless func.callable?
 
             args = o_args['subnodes'].map {|x| evaluate x}
 
-            callstack = CallStack.new(@stack.callstack, @stack, func, args)
-
-            if @stack.type == :root
-                callstack.instance_exec(@stack.runtime) do |rt|
-                    @runtime = rt
-                end
+            case func.type
+            when :FUNCTION
+                next func.call(@stack, args)
+            when :LAMBDA
+                next func.call(@stack, args)
+            else
+                raise 'wtf?!'
             end
 
-            callstack.execute
-
-            next callstack.return_value
         end
 
         handle :COMPARISON, [0, 2] do |op1, operator, op2|
@@ -225,5 +223,15 @@ module CScript
             next v.is_false?
         end
 
+        handle :LAMBDA do |lbd|
+            if lbd['type'] == 'BLOCK'        # block without params
+                next Lambda.new(@stack, lbd['operands'][0])
+            end
+
+            params = lbd['operands'][0]['subnodes'].map {|x| x['value'] }
+            body = lbd['operands'][1]
+
+            next Lambda.new(@stack, body, params)
+        end
     end
 end
