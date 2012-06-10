@@ -120,6 +120,7 @@ module CScript
                 ptr.symbol_table.variables.each do |k, v|
                     bind.store(k, v)
                 end
+                ptr = ptr.parent
             end
             bind
         end

@@ -8,6 +8,7 @@
 class CScript::Yacc
 
 prechigh
+    nonassoc       '(' ')'
     right       UMINUS UPLUS '!'
 
     left        '*' '/' '%'
@@ -21,10 +22,10 @@ prechigh
 
     right       '='
 
-    noassoc     EMIT
+    nonassoc     EMIT
 
-    noassoc     ELSE
-    noassoc     LOWER_THAN_ELSE
+    nonassoc     ELSE
+    nonassoc     LOWER_THAN_ELSE
 preclow
 
 start main_rule
@@ -82,12 +83,14 @@ rule
         | expr_list ',' expr  { return val[0] << val[2] }
     ;
 
-    func_call: name '(' expr_list ')' {
+    func_call: expr '(' opt_arg_list ')' =FUNC_CALL {
             return mkExpr(:FUNC_CALL, val[0], val[2]);
         }
-        | name '(' ')' {
-            return mkExpr(:FUNC_CALL, val[0], mkEList(:ARG_LIST))
-        }
+    ;
+
+    opt_arg_list
+        : /* EMPTY */   { return mkEList(:ARG_LIST) }
+        | expr_list
     ;
 
     func_def: DEF name '(' ')' '{' stmt_lst '}' {

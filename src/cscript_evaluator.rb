@@ -163,17 +163,16 @@ module CScript
         end
 
 
-        handle :FUNC_CALL do |name, o_args|
-            func = @stack.find(name['value'])
-            error_raise 'Object is not callable.' unless func.callable?
+        handle :FUNC_CALL, [0] do |name, o_args|
+            error_raise 'Object is not callable.' unless name.callable?
 
             args = o_args['subnodes'].map {|x| evaluate x}
 
-            case func.type
+            case name.type
             when :FUNCTION
-                next func.call(@stack, args)
+                next name.call(@stack, args)
             when :LAMBDA
-                next func.call(@stack, args)
+                next name.call(@stack, args)
             else
                 raise 'wtf?!'
             end

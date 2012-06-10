@@ -89,8 +89,8 @@ if ARGF.argv[0] == 'syntax'
     def simple_test(exc = [], name = inc)
         parser = CScript::Parser.new
         parser.scan_string(yield)
-        ap parser.do_parse
-        json = JSON.parse(parser.do_parse.to_json)
+#        ap parser.do_parse
+        json = JSON.parse(parser.do_parse.to_json, :max_nesting => 1000)
         begin
             pp json, :indent => 2
         rescue ArgumentError

@@ -30,6 +30,7 @@ module CScript
             lambda_stack.set_variables(@binding)
             lambda_stack.set_variables(make_paramter_hash(args))
 
+
             begin
                 lambda_stack.execute(@body)
             rescue ReturnSignal => ret
