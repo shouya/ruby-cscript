@@ -53,7 +53,7 @@ module CScript
             if msg_or_exc.is_a? Exception
                 raise msg_or_exc, *others
             elsif msg_or_exc.is_a? String
-                raise RuntimeError, msg_or_exc, *others
+                raise RuntimeError, msg_or_exc #, *others
             end
         end
 
@@ -108,7 +108,9 @@ module CScript
                (op1.type_is? :STRING and op2.type_is? :STRING) then
                 next op1 + op2
             else
-                eval_error("Type Error")
+                eval_error("Type Error on plus operator, " \
+                        "expected two strings or two numbers but got " \
+                        "#{op1.type} and #{op2.type}.")
             end
         end
 

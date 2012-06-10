@@ -17,6 +17,7 @@ module CScript
         attr :filename
         attr :text
         attr_reader :parser
+        attr :buffer
 
 =begin
         attr_accessor :state
@@ -26,6 +27,7 @@ module CScript
 
         class << self
             attr_reader :rules
+            attr_reader :shared_states
             def rule(mtch, state = nil, &block)
                 @rules ||= []
                 @rules << [mtch, state, block]
@@ -40,17 +42,41 @@ module CScript
             def symbol_rule(symbol, state = nil, &block)
                 rule(Regexp.new(Regexp.escape(symbol)), state, &block)
             end
+            def define_shared_state(state)
+                (@shared_states ||= []) << state
+            end
+            Symbol.class_eval do
+                def shared_state?
+                    return CScript::Scanner.shared_states.include? self
+                end
+            end
+            def nil.shared_state?
+                return true
+            end
         end
+
+        define_shared_state :NL
 
         # Basic elements
         rule(/\d+/)                 { [:INTEGER, @text.to_i] }
-        rule(/\"([^\"]|\\[nt\"])*\"/)       { [:STRING, parse_str(@text)] }
+#        rule(/\"([^\"]|\\[nt\"])*\"/)       { [:STRING, parse_str(@text)] }
 
         # Comments
         rule(%r[\/\*])              { set_state :COMM; :PASS }
         rule(%r[\*\/], :COMM)       { set_state nil; :PASS }
         rule(/\n/, :COMM)           { :PASS }
         rule(/./, :COMM)            { :PASS }
+
+        # Strings
+        rule(/\"/)                  {
+            set_state :DSTR; @buffer[:str] = ''; :PASS }
+        rule(/\"/, :DSTR)     {
+            set_state nil; [:STRING, @buffer.delete(:str)] }
+        rule(/\\\"/, :DSTR)     { @buffer[:str] << '"'; :PASS }
+        rule(/\\[a-z]|\\0[\d]{0-3}|\\0[Xx][\da-fA-F]{0,4}/, :DSTR) {
+            @buffer[:str] << eval('"' "#{@text}" '"'); :PASS }
+        rule(/./, :DSTR)        { @buffer[:str] << @text; :PASS }
+        rule(/\r\n|\r|\n/, :DSTR)       { @buffer[:str] << @text; :PASS }
 
         # Right Arrow
         symbol_rule('->')           { [:RARROW] }
@@ -94,8 +120,8 @@ module CScript
 
         # Spaces / Newlines
         rule(/\r\n|\r|\n/)          { inc_line; :PASS }
+        rule(/\r\n|\r|\n/, :NL)     { inc_line; ["\n"] }
         rule(/\s+/)                 { :PASS }
-
 
         public
         def initialize(parser)
@@ -118,8 +144,8 @@ module CScript
             @column_no = 0
             @filename = '<unknown>'
             @text = ''
+            @buffer = {}
         end
-
 
         public
         def scan_stdin
@@ -144,11 +170,6 @@ module CScript
             @column_no = @scanner.pos
         end
 
-        def set_state(new_state)
-            @state, old_state = new_state, @state
-            old_state
-        end
-
         def parse_str(text)
             result = ''
             pattern = %r[(\\[nt\\\/\|]|.)] # currently handles \
@@ -161,6 +182,12 @@ module CScript
                 end
             end
             result
+        end
+
+        public
+        def set_state(new_state)
+            @state, old_state = new_state, @state
+            old_state
         end
 
 =begin
@@ -180,23 +207,18 @@ module CScript
 
         def next_token
             action = nil
-            action = @parser.preprocess if @state == nil
+            action = @parser.preprocess if @state.shared_state?
             return action unless action == :PASS
 
             until (action = match_and_deal) != :PASS
-                action = @parser.preprocess if @state == nil
+                action = @parser.preprocess if @state.shared_state?
                 return action unless action == :PASS
             end
             action
         end
 
-        def match_and_deal
-            return [false, false] if @scanner.eos?
-
-            state_filtered = self.class.rules.select {|x| x[1] == @state }
-            rule = state_filtered.detect {|x| @scanner.match? x[0] }
-            report_error 'Unmatched token' if rule.nil?
-
+        private
+        def deal(rule)
             @text = @scanner.scan(rule[0])
 
             result = self.instance_eval &rule[2]
@@ -214,6 +236,32 @@ module CScript
                 report_error "Invalid result #{result.inspect}"
             end
         end
+        def match
+            rule = case
+                   when @state.shared_state?
+                       match_shared_state
+                   else
+                       match_single_state
+                   end
+            report_error 'No rule matched' if rule.nil?
+            return rule
+        end
+
+        def match_single_state
+            state_filtered = self.class.rules.select {|x| x[1] == @state }
+            state_filtered.detect {|x| @scanner.match? x[0] }
+        end
+        def match_shared_state
+            state_filtered = self.class.rules.select do |x|
+                x[1].shared_state? || x[1].nil?
+            end
+            candidates = state_filtered.select {|x| @scanner.match? x[0] }
+            candidates.detect {|x| x[1] == @state } or candidates[0]
+        end
+        def match_and_deal
+            return [false, false] if @scanner.eos?
+            deal(match)
+        end
 
         private
         def report_error(msg)
@@ -230,7 +278,7 @@ module CScript
 
         public
         def location
-            [@filename, @line_no, column]
+            [@filename, @line_no + 1, column]
         end
 
     end

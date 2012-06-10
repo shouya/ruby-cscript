@@ -3,6 +3,7 @@
 
 $mode = :syntax if ARGF.argv[0] == 'syntax'
 $mode = :lexer if ARGF.argv[0] == 'lexer'
+$mode = :parse_lexer if ARGF.argv[0] == 'parse_lexer'
 $mode = :cat if ARGF.argv[0] == 'cat'
 
 require 'test/unit' unless $mode
@@ -88,6 +89,7 @@ if ARGF.argv[0] == 'syntax'
     def simple_test(exc = [], name = inc)
         parser = CScript::Parser.new
         parser.scan_string(yield)
+        ap parser.do_parse
         json = JSON.parse(parser.do_parse.to_json)
         begin
             pp json, :indent => 2
@@ -113,6 +115,22 @@ elsif ARGF.argv[0] == 'cat'
         @i ||= nil
         puts File.read($0) and @i = 1 unless @i
     end
+elsif $mode == :parse_lexer
+    def simple_test(*args)
+        parser = CScript::Parser.new
+        parser.yacc.singleton_class.class_eval do
+            alias_method :next_token_surrounded, :next_token
+
+            define_method :next_token do
+                tok = next_token_surrounded
+                puts tok.inspect
+                tok
+            end
+            parser.scan_string(yield)
+            parser.do_parse
+        end
+    end
 end
+
 
 

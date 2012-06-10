@@ -2,7 +2,7 @@
 # generate use `racc cscript_yacc.y`
 #
 # Shou Ya
-# vim: filetype=ruby
+# vim: filetype=racc
 #
 
 class CScript::Yacc
@@ -49,7 +49,7 @@ rule
 
     expr: literal       { return val[0] }
         | name          { return val[0] }
-        | '(' expr ')'  { return val[1] }
+        | bracket_expr  { return val[0] }
         | assignment    { return val[0] }
         | unary_op      { return val[0] }
         | binary_op     { return val[0] }
@@ -58,6 +58,8 @@ rule
         | logic_expr    { return val[0] }
         | lambda_expr   { return val[0] }
     ;
+
+    bracket_expr: '(' expr ')' { return val[1] }
 
     binary_op: expr '+' expr    { return mkExpr(:PLUS, val[0], val[2]) }
         | expr '-' expr         { return mkExpr(:MINUS, val[0], val[2]) }
@@ -101,19 +103,25 @@ rule
         | stmt_lst stmt { return val[0] << val[1] }
     ;
 
-    emit_macro: EMIT expr ';'   { return mkMac(:DEBUG_EMIT, val[1]) }
+    emit_macro: EMIT expr       { return mkMac(:DEBUG_EMIT, val[1]) }
     ;
 
-    stmt: expr ';'      { return mkStmt(:EXPR_STMT, val[0]) }
-        | x_if          { return val[0] }
+    stmt: x_if          { return val[0] }
         | x_while       { return val[0] }
-        | x_return ';'  { return val[0] }
-        | loop_ctrl ';' { return val[0] }
-        | ';'           { return mkStmt(:EMPTY_STMT) }
-        | emit_macro    { return val[0] }
+        | { set_state :NL } inline_stmt terminator {
+            set_state nil; return val[1]
+           }
         | import_macro  { return val[0] }
-        | global_var_decl ';' { return val[0] }
-        | static_var_decl ';' { return val[0] }
+    ;
+
+    inline_stmt
+        : expr { return mkStmt(:EXPR_STMT, val[0]) }
+        | x_return { val[0] }
+        | loop_ctrl { val[0] }
+        | emit_macro { val[0] }
+        | global_var_decl { val[0] }
+        | static_var_decl { val[0] }
+        | /* EMPTY */ { set_state nil; return mkStmt(:EMPTY_STMT) }
     ;
 
     block: '{' stmt_lst '}'     { return val[1] }
@@ -184,6 +192,10 @@ rule
     ;
 
     lambda_expr: RARROW lambda_block   { return mkExpr(:LAMBDA, val[1]) }
+    ;
+
+    terminator: "\n"
+        | ';'
     ;
 
 end

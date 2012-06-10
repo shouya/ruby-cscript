@@ -25,6 +25,14 @@ module CScript
             @yacc.define_singleton_method :next_token do
                 scanner.next_token
             end
+            @yacc.define_singleton_method :set_state do |*args|
+                scanner.set_state(*args)
+            end
+            @yacc.define_singleton_method :on_error do |id, val, vstack|
+                raise "Syntax error at #{scanner.location.join(':')}, " \
+                    "value_stack #{vstack.inspect} "
+            end
+            @yacc.instance_variable_set :@yydebug, true if $CS_DEBUG > 4
 
             @yacc.singleton_class.class_eval do
                 include SyntaxTree.Shortcut do |node|
