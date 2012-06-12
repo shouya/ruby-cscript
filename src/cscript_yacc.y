@@ -8,7 +8,9 @@
 class CScript::Yacc
 
 prechigh
-    nonassoc       '(' ')'
+    nonassoc     HIGHEST
+
+    nonassoc    '(' ')'
     right       UMINUS UPLUS '!'
 
     left        '*' '/' '%'
@@ -24,182 +26,232 @@ prechigh
 
     nonassoc     EMIT
 
+    nonassoc    "\n"
+
     nonassoc     ELSE
     nonassoc     LOWER_THAN_ELSE
+
+    nonassoc     LOWEST
 preclow
 
+options no_result_var
 start main_rule
 
 rule
-    main_rule:           { return mkSList(:STATEMENTS) }
-        | main_rule stmt { return val[0] << val[1] }
-        | main_rule func_def { return val[0] << val[1] }
+    main_rule
+        : /* EMPTY */           { mkSList(:STATEMENTS) }
+        | main_rule stmt        { val[0] << val[1] }
+        | main_rule func_def    { val[0] << val[1] }
+        | main_rule "\n"        { val[0] }
     ;
 
-    literal: STRING { return mkVal(val[0]) }
-        | INTEGER   { return mkVal(val[0]) }
-        | BOOL      { return mkVal(val[0]) }
+    literal
+        : STRING    { mkVal(val[0]) }
+        | INTEGER   { mkVal(val[0]) }
+        | BOOL      { mkVal(val[0]) }
     ;
 
-    name: NAME          { return mkVal(val[0], :NAME) }
+    name: NAME          { mkVal(val[0], :NAME) }
     ;
 
-    name_list: name     { return mkVList(:NAME_LST) << val[0] }
-        | name_list ',' name    { val[0] << val[2] }
-    ;
+    name_list
+        : name                          { mkVList(:NAME_LST) << val[0] }
+        | name_list ',' optnl name      { val[0] << val[3] }
+        ;
 
-    expr: literal       { return val[0] }
-        | name          { return val[0] }
-        | bracket_expr  { return val[0] }
-        | assignment    { return val[0] }
-        | unary_op      { return val[0] }
-        | binary_op     { return val[0] }
-        | func_call     { return val[0] }
-        | comp_expr     { return val[0] }
-        | logic_expr    { return val[0] }
-        | lambda_expr   { return val[0] }
-    ;
+    expr: literal
+        | name
+        | bracket_expr
+        | assignment
+        | unary_op
+        | binary_op
+        | func_call
+        | comp_expr
+        | logic_expr
+        | lambda_expr
+        ;
 
-    bracket_expr: '(' expr ')' { return val[1] }
+    bracket_expr: '(' optnl expr optnl ')' { val[2] }
+        ;
 
-    binary_op: expr '+' expr    { return mkExpr(:PLUS, val[0], val[2]) }
-        | expr '-' expr         { return mkExpr(:MINUS, val[0], val[2]) }
-        | expr '*' expr         { return mkExpr(:MULTIPLY, val[0], val[2]) }
-        | expr '/' expr         { return mkExpr(:DIVIDE, val[0], val[2]) }
-        | expr '%' expr         { return mkExpr(:MOD, val[0], val[2]) }
-    ;
+    binary_op
+        : expr '+' optnl expr   { mkExpr(:PLUS, val[0], val[3]) }
+        | expr '-' optnl expr   { mkExpr(:MINUS, val[0], val[3]) }
+        | expr '*' optnl expr   { mkExpr(:MULTIPLY, val[0], val[3]) }
+        | expr '/' optnl expr   { mkExpr(:DIVIDE, val[0], val[3]) }
+        | expr '%' optnl expr   { mkExpr(:MOD, val[0], val[3]) }
+        ;
 
 
-    unary_op: '-' expr =UMINUS  { return mkExpr(:UMINUS, val[1]) }
-        | '+' expr =UPLUS       { return mkExpr(:UPLUS, val[1]) }
-    ;
+    unary_op
+        : '-' optnl expr =UMINUS        { mkExpr(:UMINUS, val[2]) }
+        | '+' optnl expr =UPLUS         { mkExpr(:UPLUS, val[2]) }
+        ;
 
-    assignment: name '=' expr {
-            return mkExpr(:ASSIGN, val[0], val[2])
+    assignment
+        : name '=' optnl expr { mkExpr(:ASSIGN, val[0], val[3]) }
+        ;
+
+    expr_list
+        : expr                          { mkEList(:ARG_LIST) << val[0] }
+        | expr_list ',' optnl expr      { val[0] << val[3] }
+        ;
+
+    func_call
+        : expr '(' optnl opt_arg_list optnl ')' {
+            mkExpr(:FUNC_CALL, val[0], val[3]);
         }
-    ;
-
-    expr_list: expr           { return mkEList(:ARG_LIST) << val[0] }
-        | expr_list ',' expr  { return val[0] << val[2] }
-    ;
-
-    func_call: expr '(' opt_arg_list ')' =FUNC_CALL {
-            return mkExpr(:FUNC_CALL, val[0], val[2]);
-        }
-    ;
+        ;
 
     opt_arg_list
-        : /* EMPTY */   { return mkEList(:ARG_LIST) }
+        : /* EMPTY */   { mkEList(:ARG_LIST) }
         | expr_list
+        ;
+
+    braced_block
+        : '{' optnl stmts inline_stmt '}' { val[2] << val[3] }
+        | '{' optnl stmts '}' { val[2] }
+        | '{' optnl '}' { mkStmt(:EMPTY_STMT) }
+        ;
+
+    stmts
+        : stmt                  { mkSList(:STATEMENTS) << val[0] }
+        | stmts stmt            { val[0] << val[1] }
+        ;
+
+    func_def
+        : DEF optnl name optnl opt_bracketed_param_lst
+          optnl braced_block { mkStmt(:FUNC_DEF, val[2], val[4], val[6]) }
+        ;
+
+    opt_bracketed_param_lst
+        : '(' optnl opt_param_lst optnl ')'  { val[2] }
+        | /* EMPTY */ { mkVList(:NAME_LST) }
+        ;
+
+    opt_param_lst
+        : name_list
+        | /* EMPTY */ { mkVList(:NAME_LST) }
+
+    emit_macro: EMIT optnl expr       { mkMac(:DEBUG_EMIT, val[2]) }
     ;
 
-    func_def: DEF name '(' ')' '{' stmt_lst '}' {
-            return mkStmt(:FUNC_DEF, val[1],
-                        mkVList(:NAME_LST), val[5])
-        }
-        | DEF name '(' name_list ')' '{' stmt_lst '}' {
-            return mkStmt(:FUNC_DEF, val[1], val[3], val[6])
-        }
-    ;
-
-    stmt_lst: stmt      { return mkSList(:STATEMENTS) << val[0] }
-        | stmt_lst stmt { return val[0] << val[1] }
-    ;
-
-    emit_macro: EMIT expr       { return mkMac(:DEBUG_EMIT, val[1]) }
-    ;
-
-    stmt: x_if          { return val[0] }
-        | x_while       { return val[0] }
-        | { set_state :NL } inline_stmt terminator {
-            set_state nil; return val[1]
-           }
-        | import_macro  { return val[0] }
+    stmt: x_if
+        | x_while
+        | import_macro
+        | inline_stmt terminator { val[0] }
     ;
 
     inline_stmt
-        : expr { return mkStmt(:EXPR_STMT, val[0]) }
-        | x_return { val[0] }
-        | loop_ctrl { val[0] }
-        | emit_macro { val[0] }
-        | global_var_decl { val[0] }
-        | static_var_decl { val[0] }
-        | /* EMPTY */ { set_state nil; return mkStmt(:EMPTY_STMT) }
-    ;
+        : expr { mkStmt(:EXPR_STMT, val[0]) }
+        | x_return
+        | loop_ctrl
+        | emit_macro
+        | global_var_decl
+        | static_var_decl
+        ;
 
-    block: '{' stmt_lst '}'     { return val[1] }
-    ;
+    stmt_or_blk
+        : stmt
+        | braced_block
+        ;
 
-    stmt_or_blk: stmt           { return val[0] }
-        | block                 { return val[0] }
+    x_if: if_part     =LOWER_THAN_ELSE  { mkStmt(:IF1, val[0]) }
+        | if_part multinl else_part     { mkStmt(:IF2, val[0], val[2]) }
+        | if_part else_part             { mkStmt(:IF2, val[0], val[1]) }
+        ;
 
-    x_if: if_part     =LOWER_THAN_ELSE  { return mkStmt(:IF1, val[0]) }
-        | if_part else_part   { return mkStmt(:IF2, val[0], val[1]) }
-    ;
-
-    if_part: IF '(' expr ')' stmt_or_blk {
-            return mkStmt(:IF_PART, val[2], val[4])
+    if_part
+        : IF optnl '(' optnl expr optnl ')' optnl stmt_or_blk {
+            mkStmt(:IF_PART, val[4], val[8])
         }
-    ;
+        ;
 
-    else_part: ELSE stmt_or_blk {
-            return mkStmt(:ELSE_PART, val[1])
+    else_part
+        : ELSE optnl stmt_or_blk {
+            mkStmt(:ELSE_PART, val[2])
         }
-    ;
+        ;
 
-    x_while: WHILE '(' expr ')' stmt_or_blk {
-            return mkStmt(:WHILE, val[2], val[4]);
+    x_while
+        : WHILE optnl '(' optnl expr optnl ')' optnl stmt_or_blk {
+            mkStmt(:WHILE, val[4], val[8]);
         }
-    ;
+        ;
 
-    x_return: RETURN    { return mkStmt(:RETURN) }
-        | RETURN expr   { return mkStmt(:RETURN, val[1]) }
-    ;
+    x_return
+        : RETURN        { mkStmt(:RETURN) }
+        | RETURN expr   { mkStmt(:RETURN, val[1]) }
+        ;
 
-    loop_ctrl: REDO     { return mkStmt(:REDO) }
-        | NEXT          { return mkStmt(:NEXT) }
-        | BREAK         { return mkStmt(:BREAK) }
-    ;
+    loop_ctrl
+        : REDO          { mkStmt(:REDO) }
+        | NEXT          { mkStmt(:NEXT) }
+        | BREAK         { mkStmt(:BREAK) }
+        ;
 
-    comp_expr:
-          expr RELATION expr { return mkExpr(:COMPARISON, *val[0..-1]) }
-        | expr EQUALITY expr { return mkExpr(:COMPARISON, *val[0..-1]) }
-    ;
+    comp_expr
+        : expr RELATION optnl expr {
+            mkExpr(:COMPARISON, val[0], val[1], val[3]) }
+        | expr EQUALITY optnl expr {
+            mkExpr(:COMPARISON, val[0], val[1], val[3]) }
+        ;
 
 
-    logic_expr: '!' expr        { return mkExpr(:NOT, val[1]) }
-        | expr LOGAND expr      { return mkExpr(:AND, val[0], val[2]) }
-        | expr LOGOR expr       { return mkExpr(:OR,  val[0], val[2]) }
-    ;
+    logic_expr
+        : '!' optnl expr              { mkExpr(:NOT, val[2]) }
+        | expr LOGAND optnl expr      { mkExpr(:AND, val[0], val[3]) }
+        | expr LOGOR optnl expr       { mkExpr(:OR,  val[0], val[3]) }
+        ;
 
-    import_macro: IMPORT_LOC    { return mkMac(:IMPORT_LOCAL, val[0]) }
-        | IMPORT_SYS            { return mkMac(:IMPORT_SYSTEM, val[0]) }
-    ;
+    import_macro
+        : IMPORT_LOC            { mkMac(:IMPORT_LOCAL, val[0]) }
+        | IMPORT_SYS            { mkMac(:IMPORT_SYSTEM, val[0]) }
+        ;
 
-    var_decl_lst: var_decl_item { return mkEList(:DECL_LIST) << val[0] }
-        | var_decl_lst ',' var_decl_item { return val[0] << val[2] }
-    ;
-    var_decl_item: NAME { return mkMark(:DECL_ITEM, val[0]) }
-        | NAME '=' expr { return mkMark(:DECL_ITEM_ASGN, val[0], val[2]) }
-    ;
-    global_var_decl: GLOBAL var_decl_lst { return mkStmt(:GLOBAL, val[1]) }
-    ;
+    var_decl_lst
+        : var_decl_item                 { mkEList(:DECL_LIST) << val[0] }
+        | var_decl_lst ',' optnl var_decl_item  { val[0] << val[3] }
+        ;
+    var_decl_item
+        : NAME                  { mkMark(:DECL_ITEM, val[0]) }
+        | NAME '=' optnl expr   { mkMark(:DECL_ITEM_ASGN, val[0], val[3])}
+        ;
+    global_var_decl
+        : GLOBAL optnl var_decl_lst { mkStmt(:GLOBAL, val[2]) }
+        ;
 
-    static_var_decl: STATIC var_decl_lst { return mkStmt(:STATIC, val[1]) }
-    ;
+    static_var_decl
+        : STATIC optnl var_decl_lst { mkStmt(:STATIC, val[2]) }
+        ;
 
-    lambda_block: block                  { return mkMark(:BLOCK, val[0]) }
-        | '{' '|' name_list '|' stmt_lst '}' {
-            return mkMark(:LBD_BLOCK, val[2], val[4])
+    lambda_param
+        : opt_bracketed_param_lst
+        ;
+
+    lambda_expr
+        : RARROW optnl lambda_param optnl braced_block {
+            mkExpr(:LAMBDA, val[2], val[4])
         }
-    ;
+        ;
 
-    lambda_expr: RARROW lambda_block   { return mkExpr(:LAMBDA, val[1]) }
-    ;
-
-    terminator: "\n"
+    terminator
+        : "\n"
         | ';'
-    ;
+        ;
+
+    optnl
+        : optnl_sub =LOWEST
+        ;
+
+    optnl_sub
+        :
+        | optnl_sub "\n"
+        ;
+    multinl
+        : "\n"
+        | multinl "\n"
+        ;
 
 end
 

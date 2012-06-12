@@ -224,11 +224,7 @@ module CScript
             next v.is_false?
         end
 
-        handle :LAMBDA do |lbd|
-            if lbd['type'] == 'BLOCK'        # block without params
-                next Lambda.new(@stack, lbd['operands'][0])
-            end
-
+        handle :LAMBDA, :raw => true do |lbd|
             params = lbd['operands'][0]['subnodes'].map {|x| x['value'] }
             body = lbd['operands'][1]
 

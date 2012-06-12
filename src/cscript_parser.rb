@@ -29,8 +29,22 @@ module CScript
                 scanner.set_state(*args)
             end
             @yacc.define_singleton_method :on_error do |id, val, vstack|
-                raise "Syntax error at #{scanner.location.join(':')}, " \
-                    "value_stack #{vstack.inspect} "
+                _, lineno, column = scanner.location
+                lineno -= 1
+                lines = scanner.string.lines \
+                    .to_a[(lineno-1) .. (lineno+1)]
+
+                puts ' CONTEXT '.center(70, "=")
+                puts lines[0]
+                puts lines[1]
+                print '^'.rjust(column, '-')
+                puts ''.ljust(lines[1].length - column - 2, '-')
+                puts lines[2]
+                puts ' END_OF_CONTEXT '.center(70, "=")
+
+                puts "Syntax error at #{scanner.location.join(':')}, " \
+                    "token #{token_to_str(id)} value #{val.inspect}"
+                raise "Parse error!"
             end
             @yacc.instance_variable_set :@yydebug, true if $CS_DEBUG > 4
 

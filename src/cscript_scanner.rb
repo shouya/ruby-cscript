@@ -13,7 +13,7 @@ module CScript
         include Enumerable
 
         attr :state, :line_no, :column_no
-        attr :scanner
+        attr :scanner, :string
         attr :filename
         attr :text
         attr_reader :parser
@@ -119,8 +119,7 @@ module CScript
         rule(/[a-zA-Z_]\w*/)        { [:NAME, @text] }
 
         # Spaces / Newlines
-        rule(/\r\n|\r|\n/)          { inc_line; :PASS }
-        rule(/\r\n|\r|\n/, :NL)     { inc_line; ["\n"] }
+        rule(/\r\n|\r|\n/)          { inc_line; ["\n"] }
         rule(/\s+/)                 { :PASS }
 
         public
@@ -137,6 +136,7 @@ module CScript
 
         private
         def set_data_and_initialize(string)
+            @string = string
             @scanner = StringScanner.new(string)
             @state = nil
 

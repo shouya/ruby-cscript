@@ -6,7 +6,7 @@ __END__
 
 
 def add(x) {
-    return -> {|y|
+    return -> (y) {
         x + y;
     };
 }

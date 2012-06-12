@@ -5,6 +5,7 @@ $mode = :syntax if ARGF.argv[0] == 'syntax'
 $mode = :lexer if ARGF.argv[0] == 'lexer'
 $mode = :parse_lexer if ARGF.argv[0] == 'parse_lexer'
 $mode = :cat if ARGF.argv[0] == 'cat'
+$mode = :parser if ARGF.argv[0] == 'parser'
 
 require 'test/unit' unless $mode
 
@@ -82,10 +83,12 @@ def more_simple_test(ems, name = inc)
     end
 end
 
-if ARGF.argv[0] == 'syntax'
+if $mode
     Object.send :remove_const, :MyTest
     Object.const_set(:MyTest, Class.new(BasicObject))
+end
 
+if ARGF.argv[0] == 'syntax'
     def simple_test(exc = [], name = inc)
         parser = CScript::Parser.new
         parser.scan_string(yield)
@@ -98,9 +101,6 @@ if ARGF.argv[0] == 'syntax'
         end
     end
 elsif ARGF.argv[0] == 'lexer'
-    Object.send :remove_const, :MyTest
-    Object.const_set(:MyTest, Class.new(BasicObject))
-
     def simple_test(exc = [], name = inc)
         parser = CScript::Parser.new
         parser.scan_string(yield)
@@ -129,6 +129,12 @@ elsif $mode == :parse_lexer
             parser.scan_string(yield)
             parser.do_parse
         end
+    end
+elsif $mode == :parser
+    def simple_test(exc = [], name = inc)
+        parser = CScript::Parser.new
+        parser.scan_string(yield)
+        ap parser.do_parse
     end
 end
 

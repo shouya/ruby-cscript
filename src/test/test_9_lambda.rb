@@ -8,8 +8,8 @@ __END__
 
 outer_var = 10;
 
-a = -> {|a| a + 1; };
-b = -> {|x| a(x); };
+a = ->(a) { a + 1; };
+b = ->(x) { a(x); };
 
 c = -> { outer_var; };
 
