@@ -8,7 +8,9 @@
 class CScript::Yacc
 
 prechigh
-    nonassoc       '(' ')'
+    nonassoc    HIGHEST
+
+    nonassoc    '(' ')'
     right       UMINUS UPLUS '!'
 
     left        '*' '/' '%'
@@ -22,10 +24,12 @@ prechigh
 
     right       '='
 
-    nonassoc     EMIT
+    nonassoc    EMIT
 
-    nonassoc     ELSE
-    nonassoc     LOWER_THAN_ELSE
+    nonassoc    ELSE
+    nonassoc    LOWER_THAN_ELSE
+
+    nonassoc    LOWEST
 preclow
 
 start main_rule
@@ -127,11 +131,8 @@ rule
         | /* EMPTY */ { set_state nil; return mkStmt(:EMPTY_STMT) }
     ;
 
-    block: '{' stmt_lst '}'     { return val[1] }
-    ;
-
     stmt_or_blk: stmt           { return val[0] }
-        | block                 { return val[0] }
+        | '{' stmt_lst '}'      { return val[1] }
 
     x_if: if_part     =LOWER_THAN_ELSE  { return mkStmt(:IF1, val[0]) }
         | if_part else_part   { return mkStmt(:IF2, val[0], val[1]) }
@@ -197,7 +198,8 @@ rule
     lambda_expr: RARROW lambda_block   { return mkExpr(:LAMBDA, val[1]) }
     ;
 
-    terminator: "\n"
+    terminator
+        : "\n"
         | ';'
     ;
 

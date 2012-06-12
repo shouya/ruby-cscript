@@ -116,7 +116,7 @@ module CScript
             ret_vals = tree['operands']
             ret_vals = ret_vals.empty? ? nil : @stack.evaluate(ret_vals[0])
 
-            @stack.return(ret_vals)
+            @stack.return(ret_vals) 
         end
 
         handle :REDO do

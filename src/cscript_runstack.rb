@@ -37,8 +37,8 @@ module CScript
             @executor = Executor.new(self)
             @evaluator = Evaluator.new(self)
             @symbol_table = SymbolTable.new(self)
-
             @callstack = parent ? parent.callstack : nil
+
             @callstack.current_runstack = self if @callstack
 
             @run_ptr = @substack = @last_value = nil

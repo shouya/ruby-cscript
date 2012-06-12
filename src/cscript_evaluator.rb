@@ -177,6 +177,9 @@ module CScript
                 raise 'wtf?!'
             end
 
+            callstack.execute
+
+            next callstack.return_value
         end
 
         handle :COMPARISON, [0, 2] do |op1, operator, op2|

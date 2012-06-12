@@ -63,6 +63,8 @@ module CScript
             else
                 return @current_runstack.last_value || Value.null
             end
+
+            @return_value
         end
 
         def return(return_value = nil)

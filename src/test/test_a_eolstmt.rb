@@ -16,4 +16,6 @@ EMIT b
 EMIT c
 EMIT d
 
+EMIT -> { "hello" }()
+
 
