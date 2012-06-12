@@ -190,6 +190,10 @@ module CScript
             old_state
         end
 
+        def string
+            @scanner.string
+        end
+
 =begin
         # Another easier way but not quite safe as this
         # and it will unexcepted execute stuff like '#{XXXX}'

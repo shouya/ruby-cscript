@@ -118,12 +118,31 @@ elsif ARGF.argv[0] == 'cat'
 elsif $mode == :parse_lexer
     def simple_test(*args)
         parser = CScript::Parser.new
+        scanner = parser.scanner
         parser.yacc.singleton_class.class_eval do
             alias_method :next_token_surrounded, :next_token
 
             define_method :next_token do
                 tok = next_token_surrounded
-                puts tok.inspect
+
+                disp_tok = tok.dup
+                disp_tok = %{"#{disp_tok[0]}"} if disp_tok[1].nil?
+                disp_tok = "#{disp_tok[0]}(#{disp_tok[1]})" \
+                    if disp_tok.length == 2 and disp_tok.is_a? Array
+
+                out = ''
+                out << "(#{scanner.location[1..-1].join(':')}) ".rjust(8)
+                out << disp_tok.to_s
+
+                parsed = scanner.string[0..scanner.scanner.pos]
+                rest = scanner.scanner.rest
+
+                parsed.gsub! /.*\n/, ''
+                parsed.sub! /(.*)./, '\1'
+                rest.gsub! /\n.*/, ''
+
+                puts "#{out.ljust(30, '-')}#{parsed}.#{rest}"
+
                 tok
             end
             parser.scan_string(yield)
