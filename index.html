@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Ruby-cscript : A Ruby implemented CScript." />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Ruby-cscript</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/shouya/ruby-cscript">View on GitHub</a>
+
+          <h1 id="project_title">Ruby-cscript</h1>
+          <h2 id="project_tagline">A Ruby implemented CScript.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/shouya/ruby-cscript/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/shouya/ruby-cscript/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>The CScript Programming Language</h1>
+
+<p><strong><em>(The project is still under development.)</em></strong></p>
+
+<h2>A brief history of cscript</h2>
+
+<h3>The inspiration</h3>
+
+<p>In June 2011 I quit my work from the past company, then I started to consider to design a programming language that is like C but support powerful functional programming features, as in that time I was attracted by LISP.</p>
+
+<p>Frankly, the original cscript did not have a name and it is so different from C. I designed it as block-based, which means, block will be the most obvious characteristic in it, for example, you can assign a block, execute a block, pass it as argument to a function, etc. However, in that time I even did not know Ruby. </p>
+
+<h3>Practices</h3>
+
+<p>At the first trial, I met many problems of designing that I can't continue it.</p>
+
+<p>So I decide to change something, basically, I was going to design a "scriptify" C, and the else stuff was just dropped, even contains the featured "functional programming". At the time, my idea is just want a flexible solution that could be designed normally.</p>
+
+<p>But you know, C innately is not a good dynamic language. So I struggled in many places and finally could't help to decide to give it up.</p>
+
+<p>Then it is the third trial, it was started in February 2012, and it lasted for 2 month. This version of cscript did many changes that make itself different from C. I rewrite the syntax rules with better styled as meanwhile I learned some detailed yacc and lex. And it is the first version that I could form the cscript code into a syntax tree. That was very exciting. But when I realized something should be added, I found the code is so hard to change something, as it have to almost rewrite all the code to do so. Then I was fed up using pure C to do it. I start to think to change my mind to using partial python into programming, for example, use python to execute code and generate the tree in C. Thus it would be better to write code more dynamically, especially, more elegantly.</p>
+
+<p>The current cscript is the fourth version, I choose Ruby to write all parts of the code, but make them separable. The project mainly separated in two parts -- the parser and the executor, this structure is just designed from the third version and I did a bit improvement. However, for separate these apart, I specially reconstructed the code, just at few days ago. The purpose is make the interfaces looser. Now, the communication between these two parts uses a tree of JSON or Ruby Hash. From the benefit of Ruby, I could now write more beautiful code and make it friendly to read, and rapid to run.</p>
+
+<h2>How to use this ruby lib</h2>
+
+<p>Please check the interface document for details.</p>
+
+<p>As it is not started to be written yet, I'll briefly give you some suggest here.</p>
+
+<p>First, as mentioned, the code needs to first pass through the parser to form to a syntax tree, as that time, you might need to use <code>CScript::Parser</code> class.</p>
+
+<pre><code>parser = CScript::Parser.new
+parser.scan_file(codefile)
+syntax_tree = parser.do_parse
+</code></pre>
+
+<p>And to communicate with the executor part, you need then convert the tree into json, like:</p>
+
+<pre><code>json_tree = syntax_tree.to_json
+</code></pre>
+
+<p>Then create a program object, which contains a runtime and relevant things.</p>
+
+<pre><code>prog = CScript::Program.new
+</code></pre>
+
+<p>And then load the json in the program:</p>
+
+<pre><code>prog.load_json(json_tree)
+</code></pre>
+
+<p>Then execute:</p>
+
+<pre><code>prog.run
+</code></pre>
+
+<p>That's it. Quite easy isn't that?</p>
+
+<p>If you want to debug something, such as output, you need to set the option <code>$CS_DEBUG</code> in advance; set it into a numeric value to enable specific level of debugging, or set to true to enable default level.</p>
+
+<p>Then you can use <code>EMIT</code> instruction(implemented as macro) in the code, it will emit a value that could be seen outside the program.</p>
+
+<p>You may read its emissions after the program stopped, like:</p>
+
+<pre><code>...
+prog.run
+output_list = prog.emissions
+</code></pre>
+
+<p>Then you'll get an <code>Array</code> of values (typical values but not internal cscript values). Do something as you like then.</p>
+
+<h2>Setup &amp; Run</h2>
+
+<p>It is a now just under development, so all you need to do is just compile the yacc file to generate parser, and then run the program.</p>
+
+<ol>
+<li>run <code>make</code> to generate parser's code to file <code>cscript_parser.rb</code>.</li>
+<li>run <code>make try</code> to try the code execution, it read code from stdin.</li>
+</ol><p>If you just want to try the separated parts of cscript, there are following tools:</p>
+
+<ul>
+<li>
+<code>tool/test_exec.rb</code> behaves the same as <code>make try</code>, just run the code.</li>
+<li>
+<code>tool/test_yacc.rb</code> will read from stdin also and generate a readable syntax tree, which is used for debugging whether the parser works.</li>
+<li>
+<code>tool/test_scanner.rb</code> test lexer, also read from stdin and just used for debugging. It will output a plain lexical scanning result.</li>
+</ul><h2>Features from C</h2>
+
+<h3>Dynamic typing</h3>
+
+<p>You don't need to concern about types' problems, as they are all managed automatically.</p>
+
+<p>For example, assigning variables:</p>
+
+<pre><code>foo = 1;
+bar = "string";
+foo = "another string";
+</code></pre>
+
+<h3>Direct run</h3>
+
+<p>You don't need a <code>main</code> function to indicate the start point, it will run from start of the file.</p>
+
+<h3>No memory management</h3>
+
+<p>Everything inside is a reference, so you don't need consider any thing about managing memory. cscript has a powerful garbage collection system. (As now it relies on Ruby's GC)</p>
+
+<h3>Preprocessor from C <em>(Not yet finished)</em>
+</h3>
+
+<p>You can still use the powerful preprocessor from C. As a typical C compiler does, it will still call <code>cpp</code> program for preprocessing.</p>
+
+<h3>Debugging <em>(Implementing)</em>
+</h3>
+
+<p>You may trace every value, functions, even the tree nodes' sources. Where it is from in the code, and where it is assigned first time and recently, is all now transparent to you!</p>
+
+<h3>Portable</h3>
+
+<p>No matter what platform you are using, cscript is compatible with most operating systems. (As now it relies on Ruby also)</p>
+
+<h3>Functional programming <em>(Not yet finished)</em>
+</h3>
+
+<p>CScript provides powerful functional programming features. You can use it as well as commanding programming.</p>
+
+<h3>Dynamic code tree</h3>
+
+<p>If you don't like to run the program with original executor. You can just use the syntax parser separately; the code can be exported as JSON and XML<em>(Not yet finished)</em> format. The parser part and the executor part is completely separate.</p>
+
+<h3>Exceptions <em>(Not yet finished)</em>
+</h3>
+
+<p>Exceptions could be thrown and caught. It is a fast way to jump among functions, and widely used for error recovering.</p>
+
+<h2>Contributors</h2>
+
+<ul>
+<li>Original Founder: Shou Ya (<a href="mailto:zxyzxy12321@gmail.com">zxyzxy12321@gmail.com</a>)</li>
+</ul><h2>License</h2>
+
+<p>The project is published under GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3)</p>
+
+<p>Copyright 2012, Shou Ya</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Ruby-cscript maintained by <a href="https://github.com/shouya">shouya</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-33282225-2");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+
+  </body>
+</html>
