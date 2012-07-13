@@ -1,8 +1,11 @@
 RACC=~/.gem/ruby/1.9.1/bin/racc
 OUTPUT=cscript_yacc.rb
 
-main_rule: cscript_yacc.y
+yacc: cscript_yacc.y
 	$(RACC) -o$(OUTPUT) -d -v $<
+
+debug: cscript_yacc.y
+	$(RACC) -o$(OUTPUT) -d -g -v $<
 
 
 try: exec

@@ -32,9 +32,12 @@ prechigh
     nonassoc    LOWEST
 preclow
 
+options no_result_var
+
 start main_rule
 
 rule
+
     main_rule:           { return mkSList(:STATEMENTS) }
         | main_rule stmt { return val[0] << val[1] }
         | main_rule func_def { return val[0] << val[1] }
@@ -48,7 +51,8 @@ rule
     name: NAME          { return mkVal(val[0], :NAME) }
     ;
 
-    name_list: name     { return mkVList(:NAME_LST) << val[0] }
+    name_list
+        : name     { return mkVList(:NAME_LST) << val[0] }
         | name_list ',' name    { val[0] << val[2] }
     ;
 
@@ -64,7 +68,9 @@ rule
         | lambda_expr   { return val[0] }
     ;
 
-    bracket_expr: '(' expr ')' { return val[1] }
+    bracket_expr
+        : '(' expr ')' { return val[1] }
+        ;
 
     binary_op: expr '+' expr    { return mkExpr(:PLUS, val[0], val[2]) }
         | expr '-' expr         { return mkExpr(:MINUS, val[0], val[2]) }
@@ -88,7 +94,7 @@ rule
     ;
 
     func_call: expr '(' opt_arg_list ')' =FUNC_CALL {
-            return mkExpr(:FUNC_CALL, val[0], val[2]);
+            return mkExpr(:FUNC_CALL, val[0], val[2])
         }
     ;
 
@@ -97,42 +103,58 @@ rule
         | expr_list
     ;
 
-    func_def: DEF name '(' ')' '{' stmt_lst '}' {
-            return mkStmt(:FUNC_DEF, val[1],
-                        mkVList(:NAME_LST), val[5])
-        }
-        | DEF name '(' name_list ')' '{' stmt_lst '}' {
-            return mkStmt(:FUNC_DEF, val[1], val[3], val[6])
-        }
-    ;
+    param_lst
+        : '(' ')'               { mkVList(:NAME_LST) }
+        | '(' name_list ')'     { val[1] }
+        ;
 
-    stmt_lst: stmt      { return mkSList(:STATEMENTS) << val[0] }
-        | stmt_lst stmt { return val[0] << val[1] }
-    ;
+    func_def
+        : DEF name param_lst '{' stmt_lst '}' {
+            mkStmt(:FUNC_DEF, val[1], val[2], val[4])
+        }
+        ;
 
-    emit_macro: EMIT expr       { return mkMac(:DEBUG_EMIT, val[1]) }
-    ;
+
+    stmt_lst
+        : stmt_lst_strict
+        | stmt_lst_strict inline_stmt { val[0] << val[1] }
+        | inline_stmt { mkSList(:STATEMENTS) << val[0] }
+        ;
+
+
+    stmt_lst_strict
+        : stmt { mkSList(:STATEMENTS) << val[0] }
+        | stmt_lst_strict stmt { val[0] << val[1] }
+        ;
+
+
+    emit_macro
+        : EMIT expr       { return mkMac(:DEBUG_EMIT, val[1]) }
+        ;
 
     stmt: x_if          { return val[0] }
         | x_while       { return val[0] }
-        | { set_state :NL } inline_stmt terminator {
-            set_state nil; return val[1]
-           }
         | import_macro  { return val[0] }
-    ;
+        | inline_stmt ';' { return val[0] }
+	;
 
     inline_stmt
-        : expr { return mkStmt(:EXPR_STMT, val[0]) }
-        | x_return { val[0] }
-        | loop_ctrl { val[0] }
-        | emit_macro { val[0] }
-        | global_var_decl { val[0] }
-        | static_var_decl { val[0] }
-        | /* EMPTY */ { set_state nil; return mkStmt(:EMPTY_STMT) }
+        : expr { mkStmt(:EXPR_STMT, val[0]) }
+        | x_return
+        | loop_ctrl
+        | emit_macro
+        | global_var_decl
+        | static_var_decl
     ;
 
-    stmt_or_blk: stmt           { return val[0] }
-        | '{' stmt_lst '}'      { return val[1] }
+    stmt_or_blk
+        : stmt
+        | block
+        ;
+
+    block
+        : '{' stmt_lst '}' { val[1] }
+        ;
 
     x_if: if_part     =LOWER_THAN_ELSE  { return mkStmt(:IF1, val[0]) }
         | if_part else_part   { return mkStmt(:IF2, val[0], val[1]) }
@@ -157,7 +179,8 @@ rule
         | RETURN expr   { return mkStmt(:RETURN, val[1]) }
     ;
 
-    loop_ctrl: REDO     { return mkStmt(:REDO) }
+    loop_ctrl
+        : REDO          { return mkStmt(:REDO) }
         | NEXT          { return mkStmt(:NEXT) }
         | BREAK         { return mkStmt(:BREAK) }
     ;
@@ -189,19 +212,14 @@ rule
     static_var_decl: STATIC var_decl_lst { return mkStmt(:STATIC, val[1]) }
     ;
 
-    lambda_block: block                  { return mkMark(:BLOCK, val[0]) }
-        | '{' '|' name_list '|' stmt_lst '}' {
-            return mkMark(:LBD_BLOCK, val[2], val[4])
-        }
-    ;
+    lambda_block
+        : block                 { mkMark(:BLOCK, val[0]) }
+        | param_lst block      { mkMark(:LBD_BLOCK, val[0], val[1]) }
+        ;
 
     lambda_expr: RARROW lambda_block   { return mkExpr(:LAMBDA, val[1]) }
     ;
 
-    terminator
-        : "\n"
-        | ';'
-    ;
 
 end
 

@@ -1,10 +1,7 @@
 # This file is just used for included by other test programs.
 # It only includes some convenient operations for testing
 
-$mode = :syntax if ARGF.argv[0] == 'syntax'
-$mode = :lexer if ARGF.argv[0] == 'lexer'
-$mode = :parse_lexer if ARGF.argv[0] == 'parse_lexer'
-$mode = :cat if ARGF.argv[0] == 'cat'
+$mode = ARGF.argv[0].intern if ARGF.argv[0]
 
 require 'test/unit' unless $mode
 
@@ -82,7 +79,8 @@ def more_simple_test(ems, name = inc)
     end
 end
 
-if ARGF.argv[0] == 'syntax'
+case $mode
+when :syntax
     Object.send :remove_const, :MyTest
     Object.const_set(:MyTest, Class.new(BasicObject))
 
@@ -97,7 +95,7 @@ if ARGF.argv[0] == 'syntax'
             pp json
         end
     end
-elsif ARGF.argv[0] == 'lexer'
+when :lexer
     Object.send :remove_const, :MyTest
     Object.const_set(:MyTest, Class.new(BasicObject))
 
@@ -110,12 +108,12 @@ elsif ARGF.argv[0] == 'lexer'
         end
         puts '-' * 70
     end
-elsif ARGF.argv[0] == 'cat'
+when :cat
     def simple_test(*args)
         @i ||= nil
         puts File.read($0) and @i = 1 unless @i
     end
-elsif $mode == :parse_lexer
+when :parse_lexer
     def simple_test(*args)
         parser = CScript::Parser.new
         scanner = parser.scanner
@@ -127,6 +125,7 @@ elsif $mode == :parse_lexer
 
                 disp_tok = tok.dup
                 disp_tok = %{"#{disp_tok[0]}"} if disp_tok[1].nil?
+                disp_tok = 'EOF' if disp_tok == [false, false]
                 disp_tok = "#{disp_tok[0]}(#{disp_tok[1]})" \
                     if disp_tok.length == 2 and disp_tok.is_a? Array
 
@@ -141,13 +140,20 @@ elsif $mode == :parse_lexer
                 parsed.sub! /(.*)./, '\1'
                 rest.gsub! /\n.*/, ''
 
-                puts "#{out.ljust(30, '-')}#{parsed}.#{rest}"
+                puts "#{out.ljust(20, '-')} #{parsed}.#{rest}"
 
                 tok
             end
             parser.scan_string(yield)
             parser.do_parse
         end
+    end
+when :debug_yacc
+    def simple_test(*args)
+        parser = CScript::Parser.new
+        parser.yacc.instance_variable_set :@yydebug, true
+        parser.scan_string(yield)
+        parser.do_parse
     end
 end
 
