@@ -145,6 +145,8 @@ rule
         | emit_macro
         | global_var_decl
         | static_var_decl
+	| short_if
+	| short_while
     ;
 
     stmt_or_blk
@@ -220,6 +222,13 @@ rule
     lambda_expr: RARROW lambda_block   { return mkExpr(:LAMBDA, val[1]) }
     ;
 
+    short_if
+        : inline_stmt IF expr { mkStmt(:IF1, mkStmt(:IF_PART, val[2], val[0])) }
+        ;
+
+    short_while
+        : inline_stmt WHILE expr { mkStmt(:WHILE, val[2], val[0]) }
+        ;
 
 end
 
