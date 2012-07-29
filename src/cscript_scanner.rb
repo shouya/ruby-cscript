@@ -108,6 +108,8 @@ module CScript
         keyword_rule(:false)        { [:BOOL, false] }
         keyword_rule(:global)       { [:GLOBAL] }
         keyword_rule(:static)       { [:STATIC] }
+        keyword_rule(:unless)       { [:UNLESS] }
+        keyword_rule(:until)        { [:UNTIL] }
 
         # Debugging macro
         keyword_rule(:EMIT)         { [:EMIT] }     if $CS_DEBUG

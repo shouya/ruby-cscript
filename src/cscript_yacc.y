@@ -160,6 +160,8 @@ rule
 
     x_if: if_part     =LOWER_THAN_ELSE  { return mkStmt(:IF1, val[0]) }
         | if_part else_part   { return mkStmt(:IF2, val[0], val[1]) }
+        | unless_part  =LOWER_THAN_ELSE { return mkStmt(:IF1, val[0]) }
+        | unless_part else_part { return mkStmt(:IF2, val[0], val[1]) }
     ;
 
     if_part: IF '(' expr ')' stmt_or_blk {
@@ -172,8 +174,21 @@ rule
         }
     ;
 
+
+    unless_part: UNLESS '(' expr ')' stmt_or_blk {
+            return mkStmt(:IF_PART, mkExpr(:NOT, val[2]), val[4])
+        }
+    ;
+
+
     x_while: WHILE '(' expr ')' stmt_or_blk {
-            return mkStmt(:WHILE, val[2], val[4]);
+            return mkStmt(:WHILE, val[2], val[4])
+        }
+    ;
+
+    /* until */
+    x_while: UNTIL '(' expr ')' stmt_or_blk {
+            return mkStmt(:WHILE, mkExpr(:NOT, val[2]), val[4])
         }
     ;
 
@@ -224,11 +239,19 @@ rule
 
     short_if
         : inline_stmt IF expr { mkStmt(:IF1, mkStmt(:IF_PART, val[2], val[0])) }
+        | inline_stmt UNLESS expr {
+	  mkStmt(:IF1, mkStmt(:IF_PART, mkExpr(:NOT, val[2]), val[0]))
+	}
         ;
 
     short_while
         : inline_stmt WHILE expr { mkStmt(:WHILE, val[2], val[0]) }
+        | inline_stmt UNTIL expr {
+            mkStmt(:WHILE, mkExpr(:NOT, val[2]), val[0])
+	}
         ;
+
+
 
 end
 
